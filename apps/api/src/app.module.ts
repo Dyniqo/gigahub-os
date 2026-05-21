@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-import { configuration, validateEnvironment } from '@app/common';
+import { configuration, PrismaModule, validateEnvironment } from '@app/common';
 import { HealthModule } from './modules/health/health.module';
 
 @Module({
@@ -24,6 +24,7 @@ import { HealthModule } from './modules/health/health.module';
         ],
       }),
     }),
+    PrismaModule,
     HealthModule,
   ],
   providers: [

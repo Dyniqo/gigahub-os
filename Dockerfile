@@ -15,6 +15,9 @@ RUN pnpm install --frozen-lockfile
 
 FROM dependencies AS builder
 
+ARG DATABASE_URL=postgresql://gigahub:gigahub@localhost:5432/gigahub_os?schema=public
+ENV DATABASE_URL=$DATABASE_URL
+
 COPY . .
 RUN pnpm build
 RUN pnpm prune --prod

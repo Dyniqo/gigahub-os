@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { configuration, validateEnvironment } from '@app/common';
+import { configuration, PrismaModule, validateEnvironment } from '@app/common';
 
 @Module({
   imports: [
@@ -10,6 +10,7 @@ import { configuration, validateEnvironment } from '@app/common';
       load: [configuration],
       validate: validateEnvironment,
     }),
+    PrismaModule,
   ],
 })
 export class WorkerModule {}

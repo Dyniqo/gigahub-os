@@ -11,6 +11,11 @@ jobs:
   quality:
     runs-on: ubuntu-latest
 
+    env:
+      DATABASE_URL: postgresql://gigahub:gigahub@localhost:5432/gigahub_os?schema=public
+      JWT_ACCESS_SECRET: ci-access-secret-change-before-production
+      JWT_REFRESH_SECRET: ci-refresh-secret-change-before-production
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4

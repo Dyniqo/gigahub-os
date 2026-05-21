@@ -5,6 +5,8 @@ export * from './domain/unique-entity-id';
 export * from './domain/value-object';
 export * from './infrastructure/config/configuration';
 export * from './infrastructure/config/environment.schema';
+export * from './infrastructure/database/prisma.module';
+export * from './infrastructure/database/prisma.service';
 export * from './interfaces/http/filters/http-exception.filter';
 export * from './interfaces/http/interceptors/request-id.interceptor';
 export * from './interfaces/http/interceptors/response.interceptor';

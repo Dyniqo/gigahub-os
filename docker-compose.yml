@@ -23,6 +23,8 @@ services:
     image: redis:8-alpine
     container_name: gigahub-redis
     restart: unless-stopped
+    profiles:
+      - queue
     command:
       - redis-server
       - --appendonly

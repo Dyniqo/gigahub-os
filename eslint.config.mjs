@@ -5,7 +5,12 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['dist', 'node_modules', 'coverage'],
+    ignores: [
+      'dist',
+      'node_modules',
+      'coverage',
+      'libs/common/src/infrastructure/database/generated'
+    ]
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
@@ -13,8 +18,8 @@ export default tseslint.config(
   {
     languageOptions: {
       globals: {
-        ...globals.node,
-      },
+        ...globals.node
+      }
     },
     rules: {
       '@typescript-eslint/no-explicit-any': 'error',
@@ -22,9 +27,9 @@ export default tseslint.config(
         'error',
         {
           argsIgnorePattern: '^_',
-          varsIgnorePattern: '^_',
-        },
-      ],
-    },
-  },
+          varsIgnorePattern: '^_'
+        }
+      ]
+    }
+  }
 );
