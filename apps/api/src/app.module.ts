@@ -4,6 +4,8 @@ import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { configuration, PrismaModule, validateEnvironment } from '@app/common';
 import { HealthModule } from './modules/health/health.module';
+import { IdentityModule } from './modules/identity/identity.module';
+import { UsersModule } from './modules/users/users.module';
 
 @Module({
   imports: [
@@ -25,6 +27,8 @@ import { HealthModule } from './modules/health/health.module';
       }),
     }),
     PrismaModule,
+    IdentityModule,
+    UsersModule,
     HealthModule,
   ],
   providers: [
