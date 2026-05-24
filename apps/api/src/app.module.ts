@@ -3,8 +3,10 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { configuration, PrismaModule, validateEnvironment } from '@app/common';
+import { AuditLogModule } from './modules/audit-log/audit-log.module';
 import { HealthModule } from './modules/health/health.module';
 import { IdentityModule } from './modules/identity/identity.module';
+import { ProfilesModule } from './modules/profiles/profiles.module';
 import { UsersModule } from './modules/users/users.module';
 
 @Module({
@@ -27,8 +29,10 @@ import { UsersModule } from './modules/users/users.module';
       }),
     }),
     PrismaModule,
+    AuditLogModule,
     IdentityModule,
     UsersModule,
+    ProfilesModule,
     HealthModule,
   ],
   providers: [
