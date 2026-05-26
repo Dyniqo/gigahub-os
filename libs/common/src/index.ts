@@ -11,4 +11,5 @@ export * from './interfaces/http/filters/http-exception.filter';
 export * from './interfaces/http/interceptors/request-id.interceptor';
 export * from './interfaces/http/interceptors/response.interceptor';
 export * from './shared/app-error';
+export * from './shared/pagination';
 export * from './shared/result';

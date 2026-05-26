@@ -12,12 +12,21 @@ export type RecordAuditLogInput = {
   metadata?: Prisma.InputJsonValue;
 };
 
+type AuditLogClient = {
+  auditLog: {
+    create(args: Prisma.AuditLogCreateArgs): Promise<unknown>;
+  };
+};
+
 @Injectable()
 export class AuditLogService {
   constructor(private readonly prismaService: PrismaService) {}
 
-  async record(input: RecordAuditLogInput): Promise<void> {
-    await this.prismaService.auditLog.create({
+  async record(
+    input: RecordAuditLogInput,
+    client: AuditLogClient = this.prismaService,
+  ): Promise<void> {
+    await client.auditLog.create({
       data: {
         actorId: input.actorId,
         action: input.action,
