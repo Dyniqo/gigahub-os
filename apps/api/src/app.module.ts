@@ -8,6 +8,7 @@ import { HealthModule } from './modules/health/health.module';
 import { IdentityModule } from './modules/identity/identity.module';
 import { ProfilesModule } from './modules/profiles/profiles.module';
 import { ProjectsModule } from './modules/projects/projects.module';
+import { ProposalsModule } from './modules/proposals/proposals.module';
 import { UsersModule } from './modules/users/users.module';
 
 @Module({
@@ -35,6 +36,7 @@ import { UsersModule } from './modules/users/users.module';
     UsersModule,
     ProfilesModule,
     ProjectsModule,
+    ProposalsModule,
     HealthModule,
   ],
   providers: [
