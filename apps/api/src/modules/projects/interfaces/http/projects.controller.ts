@@ -1,8 +1,10 @@
 import {
   Body,
   Controller,
+  DefaultValuePipe,
   Get,
   Param,
+  ParseIntPipe,
   ParseUUIDPipe,
   Patch,
   Post,
@@ -16,10 +18,15 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiParam,
+  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import type { Request } from 'express';
-import { UserRole } from '@app/common/infrastructure/database/generated/prisma/client';
+import {
+  ProjectStatus,
+  UserRole,
+} from '@app/common/infrastructure/database/generated/prisma/client';
+import { OptionalEnumPipe } from '@app/common';
 import { AuthenticatedUser } from '../../../identity/application/authenticated-user';
 import { CurrentUser } from '../../../identity/interfaces/http/decorators/current-user.decorator';
 import { Roles } from '../../../identity/interfaces/http/decorators/roles.decorator';
@@ -27,8 +34,6 @@ import { JwtAuthGuard } from '../../../identity/interfaces/http/guards/jwt-auth.
 import { RolesGuard } from '../../../identity/interfaces/http/guards/roles.guard';
 import { ProjectsService } from '../../services/projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
-import { OwnedProjectListQueryDto } from './dto/owned-project-list-query.dto';
-import { ProjectListQueryDto } from './dto/project-list-query.dto';
 import { ProjectListResponse, ProjectResponse } from './presenters/project.presenter';
 
 @ApiTags('Projects')
@@ -55,25 +60,98 @@ export class ProjectsController {
   }
 
   @Get()
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    example: 20,
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    example: 'contract platform',
+  })
+  @ApiQuery({
+    name: 'skill',
+    required: false,
+    type: String,
+    example: 'nestjs',
+  })
   @ApiOkResponse({
     type: ProjectListResponse,
   })
-  findPublished(@Query() query: ProjectListQueryDto): Promise<ProjectListResponse> {
-    return this.projectsService.findPublishedProjects(query);
+  findPublished(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
+    @Query('search') search?: string,
+    @Query('skill') skill?: string,
+  ): Promise<ProjectListResponse> {
+    return this.projectsService.findPublishedProjects({
+      page,
+      limit,
+      search,
+      skill,
+    });
   }
 
   @Get('me')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.CLIENT)
   @ApiBearerAuth('jwt')
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    example: 20,
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ProjectStatus,
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    example: 'contract platform',
+  })
+  @ApiQuery({
+    name: 'skill',
+    required: false,
+    type: String,
+    example: 'nestjs',
+  })
   @ApiOkResponse({
     type: ProjectListResponse,
   })
   findMine(
     @CurrentUser() user: AuthenticatedUser,
-    @Query() query: OwnedProjectListQueryDto,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
+    @Query('status', new OptionalEnumPipe(ProjectStatus)) status?: ProjectStatus,
+    @Query('search') search?: string,
+    @Query('skill') skill?: string,
   ): Promise<ProjectListResponse> {
-    return this.projectsService.findOwnedProjects(user.id, query);
+    return this.projectsService.findOwnedProjects(user.id, {
+      page,
+      limit,
+      status,
+      search,
+      skill,
+    });
   }
 
   @Get(':id')

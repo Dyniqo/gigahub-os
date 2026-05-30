@@ -1,8 +1,10 @@
 import {
   Body,
   Controller,
+  DefaultValuePipe,
   Get,
   Param,
+  ParseIntPipe,
   ParseUUIDPipe,
   Post,
   Query,
@@ -15,10 +17,15 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiParam,
+  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import type { Request } from 'express';
-import { UserRole } from '@app/common/infrastructure/database/generated/prisma/client';
+import {
+  ContractStatus,
+  UserRole,
+} from '@app/common/infrastructure/database/generated/prisma/client';
+import { OptionalEnumPipe } from '@app/common';
 import { AuthenticatedUser } from '../../../identity/application/authenticated-user';
 import { CurrentUser } from '../../../identity/interfaces/http/decorators/current-user.decorator';
 import { Roles } from '../../../identity/interfaces/http/decorators/roles.decorator';
@@ -26,7 +33,6 @@ import { JwtAuthGuard } from '../../../identity/interfaces/http/guards/jwt-auth.
 import { RolesGuard } from '../../../identity/interfaces/http/guards/roles.guard';
 import { ContractsService } from '../../services/contracts.service';
 import { AcceptProposalDto } from './dto/accept-proposal.dto';
-import { ContractListQueryDto } from './dto/contract-list-query.dto';
 import { ContractListResponse, ContractResponse } from './presenters/contract.presenter';
 
 @ApiTags('Contracts')
@@ -64,14 +70,37 @@ export class ContractsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.CLIENT, UserRole.FREELANCER)
   @ApiBearerAuth('jwt')
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    example: 20,
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ContractStatus,
+  })
   @ApiOkResponse({
     type: ContractListResponse,
   })
   findMine(
     @CurrentUser() user: AuthenticatedUser,
-    @Query() query: ContractListQueryDto,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
+    @Query('status', new OptionalEnumPipe(ContractStatus)) status?: ContractStatus,
   ): Promise<ContractListResponse> {
-    return this.contractsService.findMyContracts(user, query);
+    return this.contractsService.findMyContracts(user, {
+      page,
+      limit,
+      status,
+    });
   }
 
   @Get('contracts/:id')

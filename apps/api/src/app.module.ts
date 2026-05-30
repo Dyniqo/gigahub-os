@@ -1,8 +1,14 @@
 import { Module } from '@nestjs/common';
+import type { MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-import { configuration, PrismaModule, validateEnvironment } from '@app/common';
+import {
+  configuration,
+  PrismaModule,
+  RequestLoggerMiddleware,
+  validateEnvironment,
+} from '@app/common';
 import { AuditLogModule } from './modules/audit-log/audit-log.module';
 import { ContractsModule } from './modules/contracts/contracts.module';
 import { HealthModule } from './modules/health/health.module';
@@ -48,4 +54,8 @@ import { UsersModule } from './modules/users/users.module';
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    consumer.apply(RequestLoggerMiddleware).forRoutes('*');
+  }
+}
