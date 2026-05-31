@@ -3,4 +3,5 @@ export enum AuditResource {
   PROJECT = 'PROJECT',
   PROPOSAL = 'PROPOSAL',
   CONTRACT = 'CONTRACT',
+  MILESTONE = 'MILESTONE',
 }

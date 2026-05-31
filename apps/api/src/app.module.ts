@@ -13,6 +13,7 @@ import { AuditLogModule } from './modules/audit-log/audit-log.module';
 import { ContractsModule } from './modules/contracts/contracts.module';
 import { HealthModule } from './modules/health/health.module';
 import { IdentityModule } from './modules/identity/identity.module';
+import { MilestonesModule } from './modules/milestones/milestones.module';
 import { ProfilesModule } from './modules/profiles/profiles.module';
 import { ProjectsModule } from './modules/projects/projects.module';
 import { ProposalsModule } from './modules/proposals/proposals.module';
@@ -45,6 +46,7 @@ import { UsersModule } from './modules/users/users.module';
     ProjectsModule,
     ProposalsModule,
     ContractsModule,
+    MilestonesModule,
     HealthModule,
   ],
   providers: [

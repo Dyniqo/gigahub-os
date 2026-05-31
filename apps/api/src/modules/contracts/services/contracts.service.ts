@@ -13,6 +13,7 @@ import {
 import type { PaginatedResult } from '@app/common';
 import {
   ContractStatus,
+  MilestoneStatus,
   Prisma,
   ProjectStatus,
   ProposalStatus,
@@ -246,6 +247,7 @@ export class ContractsService {
                 amount: new Prisma.Decimal(milestone.amount),
                 currency: proposal.currency,
                 dueAt: milestone.dueAt ? new Date(milestone.dueAt) : null,
+                status: MilestoneStatus.FUNDED,
               })),
             },
           },
