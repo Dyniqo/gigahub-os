@@ -59,7 +59,7 @@ export class ContractProjectSummaryResponse {
   status!: ProjectStatus;
 }
 
-export class MilestoneResponse {
+export class ContractMilestoneResponse {
   @ApiProperty({
     format: 'uuid',
   })
@@ -171,9 +171,9 @@ export class ContractResponse {
   project!: ContractProjectSummaryResponse;
 
   @ApiProperty({
-    type: [MilestoneResponse],
+    type: [ContractMilestoneResponse],
   })
-  milestones!: MilestoneResponse[];
+  milestones!: ContractMilestoneResponse[];
 
   @ApiProperty()
   createdAt!: string;
