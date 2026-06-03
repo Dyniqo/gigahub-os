@@ -1,6 +1,7 @@
-import { Controller, Get, Param, ParseUUIDPipe, Patch, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Req, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiBadRequestResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiParam,
@@ -13,6 +14,7 @@ import { CurrentUser } from '../../../identity/interfaces/http/decorators/curren
 import { Roles } from '../../../identity/interfaces/http/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../../identity/interfaces/http/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../identity/interfaces/http/guards/roles.guard';
+import { DisputeMilestoneDto } from './dto/dispute-milestone.dto';
 import { MilestonesService } from '../../services/milestones.service';
 import { MilestoneResponse } from './presenters/milestone.presenter';
 
@@ -125,6 +127,33 @@ export class MilestonesController {
     @Req() request: Request,
   ): Promise<MilestoneResponse> {
     return this.milestonesService.releaseMilestone(id, user.id, {
+      ipAddress: request.ip,
+      userAgent: request.header('user-agent'),
+    });
+  }
+
+  @Patch('milestones/:id/dispute')
+  @Roles(UserRole.CLIENT, UserRole.FREELANCER)
+  @ApiParam({
+    name: 'id',
+    format: 'uuid',
+  })
+  @ApiOkResponse({
+    type: MilestoneResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Milestone cannot be disputed from its current status.',
+  })
+  @ApiNotFoundResponse({
+    description: 'Milestone was not found.',
+  })
+  dispute(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: DisputeMilestoneDto,
+    @Req() request: Request,
+  ): Promise<MilestoneResponse> {
+    return this.milestonesService.disputeMilestone(id, user, dto, {
       ipAddress: request.ip,
       userAgent: request.header('user-agent'),
     });

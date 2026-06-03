@@ -3,4 +3,5 @@ export enum IntegrationEventName {
   MILESTONE_SUBMITTED = 'MilestoneSubmitted',
   MILESTONE_APPROVED = 'MilestoneApproved',
   MILESTONE_RELEASED = 'MilestoneReleased',
+  MILESTONE_DISPUTED = 'MilestoneDisputed',
 }

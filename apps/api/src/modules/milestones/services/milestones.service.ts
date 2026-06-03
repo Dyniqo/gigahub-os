@@ -17,11 +17,23 @@ import { AuthenticatedUser } from '../../identity/application/authenticated-user
 import { IntegrationAggregateType } from '../../outbox/domain/integration-aggregate-type';
 import { IntegrationEventName } from '../../outbox/domain/integration-event-name';
 import { OutboxService } from '../../outbox/services/outbox.service';
+import { DisputeMilestoneDto } from '../interfaces/http/dto/dispute-milestone.dto';
 import { MilestoneResponse } from '../interfaces/http/presenters/milestone.presenter';
 
 type MilestoneRequestContext = {
   ipAddress?: string;
   userAgent?: string;
+};
+
+type MilestoneEventPayload = {
+  milestoneId: string;
+  contractId: string;
+  projectId: string;
+  clientId: string;
+  freelancerId: string;
+  status: MilestoneStatus;
+  amount: string;
+  currency: string;
 };
 
 const milestoneSelect = {
@@ -55,6 +67,12 @@ const milestoneSelect = {
   updatedAt: true,
   version: true,
 } satisfies Prisma.MilestoneSelect;
+
+const disputableMilestoneStatuses: MilestoneStatus[] = [
+  MilestoneStatus.FUNDED,
+  MilestoneStatus.SUBMITTED,
+  MilestoneStatus.APPROVED,
+];
 
 @Injectable()
 export class MilestonesService {
@@ -382,6 +400,98 @@ export class MilestonesService {
     return MilestoneResponse.fromRecord(releasedMilestone);
   }
 
+  async disputeMilestone(
+    milestoneId: string,
+    user: AuthenticatedUser,
+    dto: DisputeMilestoneDto,
+    context: MilestoneRequestContext,
+  ): Promise<MilestoneResponse> {
+    const milestone = await this.findMilestoneRecordForUser(milestoneId, user.id);
+
+    if (milestone.contract.status !== ContractStatus.ACTIVE) {
+      throw new BadRequestException('Contract is not active');
+    }
+
+    if (milestone.status === MilestoneStatus.DISPUTED) {
+      return MilestoneResponse.fromRecord(milestone);
+    }
+
+    if (!disputableMilestoneStatuses.includes(milestone.status)) {
+      throw new BadRequestException('Milestone cannot be disputed from its current status');
+    }
+
+    const normalizedReason = dto.reason.trim();
+    const normalizedEvidenceUrls = this.normalizeEvidenceUrls(dto.evidenceUrls);
+
+    const disputedMilestone = await this.prismaService.$transaction(async (transaction) => {
+      const result = await transaction.milestone.updateMany({
+        where: {
+          id: milestone.id,
+          version: milestone.version,
+          status: {
+            in: disputableMilestoneStatuses,
+          },
+        },
+        data: {
+          status: MilestoneStatus.DISPUTED,
+          version: {
+            increment: 1,
+          },
+        },
+      });
+
+      if (result.count !== 1) {
+        throw new ConflictException('Milestone was modified by another request');
+      }
+
+      const updatedMilestone = await transaction.milestone.findUniqueOrThrow({
+        where: {
+          id: milestone.id,
+        },
+        select: milestoneSelect,
+      });
+
+      await this.auditLogService.record(
+        {
+          actorId: user.id,
+          action: AuditAction.MILESTONE_DISPUTED,
+          resourceType: AuditResource.MILESTONE,
+          resourceId: updatedMilestone.id,
+          ipAddress: context.ipAddress,
+          userAgent: context.userAgent,
+          metadata: {
+            reason: normalizedReason,
+            evidenceUrls: normalizedEvidenceUrls,
+            previousStatus: milestone.status,
+          },
+        },
+        transaction,
+      );
+
+      await this.outboxService.record(
+        {
+          aggregateType: IntegrationAggregateType.MILESTONE,
+          aggregateId: updatedMilestone.id,
+          aggregateVersion: updatedMilestone.version,
+          eventName: IntegrationEventName.MILESTONE_DISPUTED,
+          payload: {
+            ...this.createMilestoneEventPayload(updatedMilestone),
+            disputedByUserId: user.id,
+            previousStatus: milestone.status,
+            reason: normalizedReason,
+            evidenceUrls: normalizedEvidenceUrls,
+          },
+          headers: this.createMilestoneEventHeaders(user.id, context),
+        },
+        transaction,
+      );
+
+      return updatedMilestone;
+    });
+
+    return MilestoneResponse.fromRecord(disputedMilestone);
+  }
+
   private async findMilestoneForFreelancer(milestoneId: string, freelancerId: string) {
     const milestone = await this.prismaService.milestone.findFirst({
       where: {
@@ -418,11 +528,36 @@ export class MilestonesService {
     return milestone;
   }
 
+  private async findMilestoneRecordForUser(milestoneId: string, userId: string) {
+    const milestone = await this.prismaService.milestone.findFirst({
+      where: {
+        id: milestoneId,
+        contract: {
+          OR: [
+            {
+              clientId: userId,
+            },
+            {
+              freelancerId: userId,
+            },
+          ],
+        },
+      },
+      select: milestoneSelect,
+    });
+
+    if (!milestone) {
+      throw new NotFoundException('Milestone was not found');
+    }
+
+    return milestone;
+  }
+
   private createMilestoneEventPayload(
     milestone: Prisma.MilestoneGetPayload<{
       select: typeof milestoneSelect;
     }>,
-  ): Prisma.InputJsonValue {
+  ): MilestoneEventPayload {
     return {
       milestoneId: milestone.id,
       contractId: milestone.contractId,
@@ -443,5 +578,15 @@ export class MilestonesService {
       actorId,
       requestIp: context.ipAddress ?? null,
     };
+  }
+
+  private normalizeEvidenceUrls(evidenceUrls?: string[]): string[] {
+    return Array.from(
+      new Set(
+        (evidenceUrls ?? [])
+          .map((evidenceUrl) => evidenceUrl.trim())
+          .filter((evidenceUrl) => evidenceUrl.length > 0),
+      ),
+    );
   }
 }
