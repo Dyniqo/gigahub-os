@@ -19,6 +19,7 @@ import { CreateProjectDto } from '../interfaces/http/dto/create-project.dto';
 import { OwnedProjectListQueryDto } from '../interfaces/http/dto/owned-project-list-query.dto';
 import { ProjectListQueryDto } from '../interfaces/http/dto/project-list-query.dto';
 import { ProjectResponse } from '../interfaces/http/presenters/project.presenter';
+import { Logger } from '@nestjs/common';
 
 type ProjectRequestContext = {
   ipAddress?: string;
@@ -292,7 +293,7 @@ export class ProjectsService {
 
   private applySearchFilters(where: Prisma.ProjectWhereInput, query: ProjectListQueryDto): void {
     const search = query.search?.trim();
-    const skill = query.skill?.trim().toLowerCase();
+    const skills = this.normalizeSkillFilter(query.skill);
 
     if (search) {
       where.OR = [
@@ -311,13 +312,15 @@ export class ProjectsService {
       ];
     }
 
-    if (skill) {
+    if (skills.length) {
       where.skills = {
         some: {
-          name: {
-            equals: skill,
-            mode: Prisma.QueryMode.insensitive,
-          },
+          OR: skills.map((skill) => ({
+            name: {
+              contains: skill,
+              mode: Prisma.QueryMode.insensitive,
+            },
+          })),
         },
       };
     }
@@ -341,6 +344,24 @@ export class ProjectsService {
     return Array.from(
       new Set(
         skills.map((skill) => skill.trim().toLowerCase()).filter((skill) => skill.length > 0),
+      ),
+    );
+  }
+
+  private normalizeSkillFilter(skills?: string[] | string): string[] {
+    if (!skills) {
+      return [];
+    }
+
+    const values = Array.isArray(skills) ? skills : [skills];
+
+    return Array.from(
+      new Set(
+        values
+          .flatMap((skill) => skill.split(','))
+          .map((skill) => skill.trim().toLowerCase())
+          .filter((skill) => skill.length > 0)
+          .slice(0, 25),
       ),
     );
   }

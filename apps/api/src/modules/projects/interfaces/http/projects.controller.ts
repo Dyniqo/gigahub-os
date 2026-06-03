@@ -36,6 +36,19 @@ import { ProjectsService } from '../../services/projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { ProjectListResponse, ProjectResponse } from './presenters/project.presenter';
 
+function parseSkillQuery(value?: string | string[]): string[] | undefined {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+
+  const skills = (Array.isArray(value) ? value : [value])
+    .flatMap((item) => item.split(','))
+    .map((skill) => skill.trim())
+    .filter(Boolean);
+
+  return skills.length ? skills : undefined;
+}
+
 @ApiTags('Projects')
 @Controller('projects')
 export class ProjectsController {
@@ -82,7 +95,9 @@ export class ProjectsController {
     name: 'skill',
     required: false,
     type: String,
-    example: 'nestjs',
+    isArray: true,
+    example: ['nestjs', 'react'],
+    description: 'Repeat the parameter for multiple skills: ?skill=nestjs&skill=react.',
   })
   @ApiOkResponse({
     type: ProjectListResponse,
@@ -91,13 +106,13 @@ export class ProjectsController {
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
     @Query('search') search?: string,
-    @Query('skill') skill?: string,
+    @Query('skill') skill?: string | string[],
   ): Promise<ProjectListResponse> {
     return this.projectsService.findPublishedProjects({
       page,
       limit,
       search,
-      skill,
+      skill: parseSkillQuery(skill),
     });
   }
 
@@ -132,7 +147,9 @@ export class ProjectsController {
     name: 'skill',
     required: false,
     type: String,
-    example: 'nestjs',
+    isArray: true,
+    example: ['nestjs', 'react'],
+    description: 'Repeat the parameter for multiple skills: ?skill=nestjs&skill=react.',
   })
   @ApiOkResponse({
     type: ProjectListResponse,
@@ -143,14 +160,14 @@ export class ProjectsController {
     @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
     @Query('status', new OptionalEnumPipe(ProjectStatus)) status?: ProjectStatus,
     @Query('search') search?: string,
-    @Query('skill') skill?: string,
+    @Query('skill') skill?: string | string[],
   ): Promise<ProjectListResponse> {
     return this.projectsService.findOwnedProjects(user.id, {
       page,
       limit,
       status,
       search,
-      skill,
+      skill: parseSkillQuery(skill),
     });
   }
 
