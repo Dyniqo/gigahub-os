@@ -2,7 +2,22 @@
   "name": "gigahub-os",
   "version": "0.1.0",
   "private": true,
-  "license": "UNLICENSED",
+  "description": "Workflow-driven freelance marketplace backend and demo console built with NestJS, Nuxt, PostgreSQL, Prisma, and a transactional outbox worker.",
+  "author": {
+    "name": "dyniqo",
+    "url": "https://dyniqo.dev",
+    "email": "contact@dyniqo.dev"
+  },
+  "homepage": "https://github.com/dyniqo/gigahub-os",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dyniqo/gigahub-os.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dyniqo/gigahub-os/issues",
+    "email": "contact@dyniqo.dev"
+  },
+  "license": "MIT",
   "engines": {
     "node": ">=24.0.0",
     "pnpm": ">=10.0.0"
