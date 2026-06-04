@@ -1,42 +1,120 @@
-name: ci
+name: CI
 
 on:
+  pull_request:
   push:
     branches:
       - main
-      - develop
-  pull_request:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  NODE_VERSION: '24'
+  PNPM_VERSION: '10.0.0'
+  VITE_API_BASE_URL: http://localhost:3000/api/v1
+  DATABASE_URL: postgresql://gigahub:gigahub@localhost:5432/gigahub_os?schema=public
+  NPM_REGISTRY: https://registry.npmjs.org/
+  PRISMA_ENGINES_MIRROR: https://binaries.prisma.sh
+  PRODUCTION_API_BASE_URL: ${{ vars.PRODUCTION_API_BASE_URL || 'https://api.gigahub.dyniqo.dev/api/v1' }}
 
 jobs:
-  quality:
+  verify:
+    name: Verify
     runs-on: ubuntu-latest
 
-    env:
-      DATABASE_URL: postgresql://gigahub:gigahub@localhost:5432/gigahub_os?schema=public
-      JWT_ACCESS_SECRET: ci-access-secret-change-before-production
-      JWT_REFRESH_SECRET: ci-refresh-secret-change-before-production
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: gigahub
+          POSTGRES_PASSWORD: gigahub
+          POSTGRES_DB: gigahub_os
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U gigahub -d gigahub_os"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Enable Corepack
-        run: corepack enable
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
 
-      - name: Setup Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Check formatting
-        run: pnpm format:check
+      - name: Apply database migrations
+        run: pnpm prisma:migrate:deploy
 
-      - name: Lint
-        run: pnpm lint
+      - name: Run verification
+        run: pnpm verify
 
-      - name: Build
-        run: pnpm build
+  docker:
+    name: Build and publish Docker images
+    runs-on: ubuntu-latest
+    needs: verify
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: migrate
+            target: migrator
+            image: gigahub-migrate
+          - name: api
+            target: runner
+            image: gigahub-api
+          - name: worker
+            target: worker
+            image: gigahub-worker
+          - name: web
+            target: web
+            image: gigahub-web
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and publish ${{ matrix.name }} image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: ${{ matrix.target }}
+          push: true
+          build-args: |
+            NPM_REGISTRY=${{ env.NPM_REGISTRY }}
+            PRISMA_ENGINES_MIRROR=${{ env.PRISMA_ENGINES_MIRROR }}
+            DATABASE_URL=postgresql://gigahub:gigahub@postgres:5432/gigahub_os?schema=public
+            VITE_API_BASE_URL=${{ env.PRODUCTION_API_BASE_URL }}
+          tags: |
+            ghcr.io/dyniqo/${{ matrix.image }}:latest
+            ghcr.io/dyniqo/${{ matrix.image }}:${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
