@@ -1,0 +1,586 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --ink: #050814;
+  --ink-2: #08111f;
+  --paper: #f7faff;
+  --muted: #94a3b8;
+  --line: rgba(255, 255, 255, 0.1);
+  --line-strong: rgba(255, 255, 255, 0.18);
+  --blue: #60a5fa;
+  --cyan: #67e8f9;
+  --violet: #8b5cf6;
+  --navy: #172554;
+  --aqua: #38bdf8;
+}
+
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+}
+html,
+body,
+#root {
+  min-width: 0;
+}
+body {
+  overflow-x: hidden;
+}
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+body {
+  min-height: 100vh;
+  margin: 0;
+  background:
+    radial-gradient(circle at 12% -10%, rgba(96, 165, 250, 0.24), transparent 31rem),
+    radial-gradient(circle at 88% 8%, rgba(56, 189, 248, 0.2), transparent 30rem),
+    radial-gradient(circle at 50% 105%, rgba(79, 70, 229, 0.15), transparent 34rem),
+    linear-gradient(180deg, #050814 0%, #08111f 52%, #030712 100%);
+  color: #eef6ff;
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.045) 1px, transparent 1px);
+  background-size: 46px 46px;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.82), rgba(0, 0, 0, 0.24), transparent);
+  z-index: -3;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    transparent 0 18%,
+    rgba(125, 211, 252, 0.035) 20%,
+    transparent 26% 100%
+  );
+  mix-blend-mode: screen;
+  z-index: -2;
+}
+
+::selection {
+  background: rgba(96, 165, 250, 0.34);
+  color: #fff;
+}
+
+@layer components {
+  .forge-shell {
+    min-width: 0;
+    border: 1px solid var(--line);
+    background: linear-gradient(180deg, rgba(11, 18, 32, 0.9), rgba(5, 10, 20, 0.8));
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      0 30px 90px rgba(15, 23, 42, 0.38);
+    backdrop-filter: blur(24px);
+  }
+
+  .forge-card {
+    min-width: 0;
+    border: 1px solid var(--line);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.078), rgba(255, 255, 255, 0.034)),
+      rgba(6, 12, 25, 0.74);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.07),
+      0 24px 70px rgba(15, 23, 42, 0.32);
+    backdrop-filter: blur(20px);
+  }
+
+  .forge-card-soft {
+    border: 1px solid rgba(255, 255, 255, 0.075);
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .forge-card:hover .forge-hover-line,
+  .forge-glow:hover .forge-hover-line {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .forge-hover-line {
+    position: absolute;
+    top: 0;
+    left: 1rem;
+    right: 1rem;
+    height: 1px;
+    opacity: 0;
+    transform: translateX(-22px);
+    transition:
+      opacity 0.35s ease,
+      transform 0.35s ease;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(96, 165, 250, 0.95),
+      rgba(103, 232, 249, 0.9),
+      transparent
+    );
+  }
+
+  .forge-button {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05));
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.12),
+      0 16px 38px rgba(15, 23, 42, 0.3);
+    color: #f8fbff;
+    transition:
+      transform 0.2s ease,
+      border-color 0.2s ease,
+      background 0.2s ease;
+  }
+
+  .forge-button:hover {
+    transform: translateY(-1px);
+    border-color: rgba(96, 165, 250, 0.5);
+  }
+  .forge-button:active {
+    transform: translateY(0px) scale(0.99);
+  }
+
+  .forge-button-primary {
+    border-color: rgba(96, 165, 250, 0.55);
+    background: linear-gradient(135deg, rgba(147, 197, 253, 0.98), rgba(56, 189, 248, 0.9));
+    color: #04111f;
+    font-weight: 800;
+  }
+
+  .forge-button-danger {
+    border-color: rgba(248, 113, 113, 0.34);
+    background: linear-gradient(135deg, rgba(248, 113, 113, 0.22), rgba(255, 255, 255, 0.05));
+    color: #fee2e2;
+  }
+
+  .forge-input {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    border-radius: 1.2rem;
+    border: 1px solid rgba(255, 255, 255, 0.11);
+    background: rgba(3, 7, 18, 0.58);
+    padding: 0.9rem 1rem;
+    color: #f8fbff;
+    outline: none;
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease,
+      background 0.2s ease;
+  }
+
+  .forge-input:focus {
+    border-color: rgba(96, 165, 250, 0.56);
+    box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.11);
+    background: rgba(6, 12, 25, 0.86);
+  }
+
+  .forge-input-compact {
+    border-radius: 1rem;
+    padding: 0.68rem 0.85rem;
+    font-size: 0.875rem;
+    font-weight: 800;
+  }
+
+  .forge-combo-button {
+    min-height: 3rem;
+    cursor: pointer;
+  }
+
+  .forge-label {
+    display: block;
+    margin-bottom: 0.45rem;
+    color: #bac8dc;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .forge-kbd {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.06);
+    box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  .gradient-text {
+    background: linear-gradient(90deg, #ffffff, #bfdbfe 34%, #67e8f9 72%, #ffffff);
+    -webkit-background-clip: text;
+    color: transparent;
+  }
+
+  .mesh-orb {
+    position: absolute;
+    width: 20rem;
+    height: 20rem;
+    border-radius: 999px;
+    filter: blur(56px);
+    opacity: 0.23;
+    pointer-events: none;
+  }
+
+  .thin-scrollbar::-webkit-scrollbar {
+    width: 7px;
+    height: 7px;
+  }
+  .thin-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 999px;
+  }
+  .thin-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+@layer utilities {
+  .text-safe {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    hyphens: auto;
+  }
+
+  .card-grid-safe {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  }
+}
+
+@media (max-width: 420px) {
+  .forge-card,
+  .forge-shell {
+    border-radius: 1.35rem;
+  }
+  .forge-input {
+    border-radius: 1rem;
+    padding: 0.8rem 0.85rem;
+  }
+  .forge-button {
+    border-radius: 1rem;
+    padding-left: 0.85rem;
+    padding-right: 0.85rem;
+  }
+}
+
+:root.theme-light {
+  color-scheme: light;
+  --ink: #eff6ff;
+  --ink-2: #dbeafe;
+  --paper: #07111f;
+  --muted: #64748b;
+  --line: rgba(15, 23, 42, 0.1);
+  --line-strong: rgba(15, 23, 42, 0.16);
+  --blue: #2563eb;
+  --cyan: #0891b2;
+  --violet: #4f46e5;
+  --navy: #1e3a8a;
+  --aqua: #0284c7;
+}
+
+:root.theme-light body {
+  background:
+    radial-gradient(circle at 10% -8%, rgba(37, 99, 235, 0.16), transparent 31rem),
+    radial-gradient(circle at 90% 2%, rgba(14, 165, 233, 0.14), transparent 29rem),
+    radial-gradient(circle at 52% 107%, rgba(99, 102, 241, 0.11), transparent 35rem),
+    linear-gradient(180deg, #f8fbff 0%, #eff6ff 55%, #e0f2fe 100%);
+  color: #0f172a;
+}
+
+:root.theme-light body::before {
+  background-image:
+    linear-gradient(rgba(15, 23, 42, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 23, 42, 0.045) 1px, transparent 1px);
+}
+
+:root.theme-light body::after {
+  background: linear-gradient(
+    115deg,
+    transparent 0 18%,
+    rgba(37, 99, 235, 0.055) 20%,
+    transparent 26% 100%
+  );
+  mix-blend-mode: multiply;
+}
+
+:root.theme-light .forge-shell {
+  border-color: rgba(15, 23, 42, 0.1);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(239, 246, 255, 0.78));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    0 26px 80px rgba(37, 99, 235, 0.12);
+}
+
+:root.theme-light .forge-card {
+  border-color: rgba(15, 23, 42, 0.1);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(239, 246, 255, 0.76)),
+    rgba(255, 255, 255, 0.75);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 22px 65px rgba(37, 99, 235, 0.11);
+}
+
+:root.theme-light .forge-card-soft {
+  border-color: rgba(15, 23, 42, 0.1);
+  background: rgba(255, 255, 255, 0.55);
+}
+
+:root.theme-light .forge-button {
+  border-color: rgba(15, 23, 42, 0.12);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.85), rgba(219, 234, 254, 0.72));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    0 14px 34px rgba(37, 99, 235, 0.12);
+  color: #0f172a;
+}
+
+:root.theme-light .forge-button-primary {
+  border-color: rgba(37, 99, 235, 0.38);
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.96), rgba(14, 165, 233, 0.88));
+  color: #ffffff;
+}
+
+:root.theme-light .forge-button-danger {
+  color: #991b1b;
+}
+
+:root.theme-light .forge-input {
+  border-color: rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.78);
+  color: #0f172a;
+}
+
+:root.theme-light .forge-input:focus {
+  border-color: rgba(37, 99, 235, 0.48);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+  background: rgba(255, 255, 255, 0.96);
+}
+
+:root.theme-light .forge-label {
+  color: #475569;
+}
+:root.theme-light .gradient-text {
+  background: linear-gradient(90deg, #0f172a, #2563eb 42%, #0284c7 72%, #172554);
+  -webkit-background-clip: text;
+  color: transparent;
+}
+:root.theme-light .text-white {
+  color: #0f172a !important;
+}
+:root.theme-light .text-slate-500 {
+  color: #64748b !important;
+}
+:root.theme-light .text-slate-400 {
+  color: #475569 !important;
+}
+:root.theme-light .text-slate-300 {
+  color: #334155 !important;
+}
+:root.theme-light .text-sky-100,
+:root.theme-light .text-sky-200,
+:root.theme-light .text-cyan-100 {
+  color: #0369a1 !important;
+}
+:root.theme-light .text-red-100 {
+  color: #991b1b !important;
+}
+:root.theme-light .text-cyan-100 {
+  color: #0e7490 !important;
+}
+:root.theme-light .bg-white.text-slate-950,
+:root.theme-light .bg-white .text-slate-950,
+:root.theme-light .text-slate-950 {
+  color: #0f172a !important;
+}
+:root.theme-light .bg-black\/20,
+:root.theme-light .bg-black\/25,
+:root.theme-light .bg-black\/70 {
+  background-color: rgba(255, 255, 255, 0.52) !important;
+}
+:root.theme-light .border-white\/10 {
+  border-color: rgba(15, 23, 42, 0.1) !important;
+}
+:root.theme-light .bg-white\/5,
+:root.theme-light .bg-white\/10,
+:root.theme-light .bg-white\/\[\.04\],
+:root.theme-light .bg-white\/\[\.045\] {
+  background-color: rgba(255, 255, 255, 0.55) !important;
+}
+:root.theme-light .shadow-glass {
+  box-shadow: 0 14px 35px rgba(37, 99, 235, 0.12);
+}
+:root.theme-light option {
+  color: #0f172a;
+  background: #ffffff;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .forge-card,
+  .forge-shell,
+  .forge-button,
+  .forge-input {
+    animation: forgeIn 0.28s ease both;
+  }
+
+  @keyframes forgeIn {
+    from {
+      opacity: 0.001;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+@media (max-width: 640px) {
+  h1,
+  h2,
+  h3 {
+    overflow-wrap: anywhere;
+  }
+  .forge-card,
+  .forge-shell {
+    max-width: 100%;
+  }
+}
+:root.theme-light .forge-button-primary {
+  color: #ffffff !important;
+}
+:root.theme-light .forge-button-primary * {
+  color: inherit !important;
+}
+:root.theme-light .text-slate-200 {
+  color: #1e293b !important;
+}
+:root.theme-light .text-sky-50,
+:root.theme-light .text-teal-100,
+:root.theme-light .text-violet-100 {
+  color: #075985 !important;
+}
+
+:root.theme-light .bg-black\/15,
+:root.theme-light .bg-black\/20,
+:root.theme-light .bg-black\/25,
+:root.theme-light .bg-black\/30,
+:root.theme-light .bg-black\/35 {
+  background-color: rgba(226, 239, 255, 0.74) !important;
+}
+
+:root.theme-light .bg-black\/70 {
+  background-color: rgba(15, 23, 42, 0.46) !important;
+}
+
+:root.theme-light .forge-card-soft {
+  border-color: rgba(37, 99, 235, 0.11);
+  background: rgba(248, 251, 255, 0.66);
+}
+
+:root.theme-light .forge-button {
+  border-color: rgba(37, 99, 235, 0.13);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(226, 239, 255, 0.78));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    0 10px 25px rgba(37, 99, 235, 0.09);
+}
+
+:root.theme-light .forge-button:hover {
+  border-color: rgba(37, 99, 235, 0.28);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(219, 234, 254, 0.86));
+}
+
+:root.theme-light .forge-button-danger {
+  border-color: rgba(220, 38, 38, 0.18);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(254, 226, 226, 0.72));
+  color: #991b1b;
+}
+:root.theme-light .bg-slate-950\/40 {
+  background-color: rgba(255, 255, 255, 0.72) !important;
+}
+
+/* Final UX polish: keep primary actions legible in light mode, even when generic button styles appear later in the cascade. */
+:root.theme-light .forge-button.forge-button-primary {
+  border-color: rgba(29, 78, 216, 0.38) !important;
+  background: linear-gradient(135deg, #1d4ed8 0%, #0284c7 100%) !important;
+  color: #ffffff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    0 14px 30px rgba(37, 99, 235, 0.22) !important;
+}
+
+:root.theme-light .forge-button.forge-button-primary:hover {
+  border-color: rgba(29, 78, 216, 0.52) !important;
+  background: linear-gradient(135deg, #1e40af 0%, #0369a1 100%) !important;
+}
+
+:root.theme-light .forge-button.forge-button-primary,
+:root.theme-light .forge-button.forge-button-primary * {
+  color: #ffffff !important;
+}
+
+:root.theme-light .bg-slate-950\/40 {
+  background-color: rgba(255, 255, 255, 0.72) !important;
+}
+
+input[type='date'].forge-input {
+  min-height: 3.25rem;
+}
+
+input[type='date'].forge-input::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.75;
+}
+
+:root.theme-light input[type='date'].forge-input::-webkit-calendar-picker-indicator {
+  filter: invert(20%);
+}
+
+@media (max-width: 520px) {
+  .forge-button {
+    min-height: 2.75rem;
+  }
+}
+
+:root.theme-light .bg-slate-950\/95 {
+  background-color: rgba(248, 251, 255, 0.97) !important;
+}
+
+:root.theme-light .text-white {
+  color: #0f172a !important;
+}
+
+:root.theme-light .focus\:bg-black\/40:focus {
+  background-color: rgba(255, 255, 255, 0.96) !important;
+}

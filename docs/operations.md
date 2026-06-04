@@ -1,6 +1,6 @@
 # Operations Guide
 
-This guide covers the local commands used to run, verify, and reset Gigahub OS.
+This guide covers the local commands used to run, verify, and reset GigaHub OS.
 
 ## Start Infrastructure
 
@@ -8,9 +8,7 @@ This guide covers the local commands used to run, verify, and reset Gigahub OS.
 docker compose up -d postgres
 ```
 
-Redis is not required for the current workflow.
-
-When a future queue-backed flow is added, start Redis with:
+Redis is available through the queue profile when queue-backed workflows are needed.
 
 ```powershell
 docker compose --profile queue up -d redis
@@ -58,16 +56,46 @@ pnpm prisma:migrate:deploy
 pnpm format
 ```
 
+## Check Formatting
+
+```powershell
+pnpm format:check
+```
+
 ## Lint
 
 ```powershell
 pnpm lint
 ```
 
-## Build
+## Type Check Web
+
+```powershell
+pnpm typecheck:web
+```
+
+## Build All Applications
 
 ```powershell
 pnpm build
+```
+
+## Build API
+
+```powershell
+pnpm build:api
+```
+
+## Build Worker
+
+```powershell
+pnpm build:worker
+```
+
+## Build Web
+
+```powershell
+pnpm build:web
 ```
 
 ## Run API
@@ -76,15 +104,45 @@ pnpm build
 pnpm start:api
 ```
 
+For watch mode:
+
+```powershell
+pnpm start:api:dev
+```
+
 ## Run Worker
 
 ```powershell
 pnpm start:worker
 ```
 
-## Run API and Worker Together
+For watch mode:
 
-Open two terminals.
+```powershell
+pnpm start:worker:dev
+```
+
+## Run Web Interface
+
+```powershell
+pnpm dev:web
+```
+
+The web interface reads the API base URL from:
+
+```env
+VITE_API_BASE_URL=http://localhost:3000/api/v1
+```
+
+## Preview Web Build
+
+```powershell
+pnpm preview:web
+```
+
+## Run API, Worker, and Web Together
+
+Open three terminals.
 
 Terminal 1:
 
@@ -96,6 +154,12 @@ Terminal 2:
 
 ```powershell
 pnpm start:worker
+```
+
+Terminal 3:
+
+```powershell
+pnpm dev:web
 ```
 
 ## Swagger
@@ -134,6 +198,13 @@ powershell -ExecutionPolicy Bypass -File docs/demo-flow.ps1
 
 Run the worker in a second terminal to see outbox relay logs while the demo creates workflow events.
 
+The script uses `http://localhost:3000/api/v1` by default. To point it at another API base URL:
+
+```powershell
+$env:GIGAHUB_API_BASE_URL = "http://localhost:3000/api/v1"
+powershell -ExecutionPolicy Bypass -File docs/demo-flow.ps1
+```
+
 ## Generated Client
 
 The Prisma client is generated under the common database library path. Do not commit generated output.
@@ -146,22 +217,31 @@ git reset libs/common/src/infrastructure/database/generated
 
 ## Suggested Local Verification Sequence
 
+Terminal 1:
+
 ```powershell
 docker compose up -d postgres
 pnpm prisma:generate
-pnpm format
+pnpm format:check
 pnpm lint
+pnpm typecheck:web
 pnpm build
 pnpm start:api
 ```
 
-Then run in another terminal:
+Terminal 2:
 
 ```powershell
 pnpm start:worker
 ```
 
-Then run in another terminal:
+Terminal 3:
+
+```powershell
+pnpm dev:web
+```
+
+Terminal 4:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File docs/demo-flow.ps1

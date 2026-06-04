@@ -1,6 +1,10 @@
 $ErrorActionPreference = "Stop"
 
-$baseUrl = "http://localhost:3000/api/v1"
+$baseUrl = if ($env:GIGAHUB_API_BASE_URL) {
+  $env:GIGAHUB_API_BASE_URL.TrimEnd("/")
+} else {
+  "http://localhost:3000/api/v1"
+}
 
 function Invoke-GigahubJson {
   param (
@@ -61,6 +65,10 @@ function Get-GigahubSession {
   }
 }
 
+Write-Host ""
+Write-Host "API base URL:"
+Write-Host $baseUrl
+
 $clientSession = Get-GigahubSession -Email "client@gigahub.local" -Password "StrongPassword123!" -Role "CLIENT"
 $freelancerSession = Get-GigahubSession -Email "freelancer@gigahub.local" -Password "StrongPassword123!" -Role "FREELANCER"
 
@@ -87,12 +95,12 @@ Write-Host "Ready health:"
 $readyHealth | ConvertTo-Json -Depth 12
 
 $project = Invoke-GigahubJson -Method "Post" -Path "/projects" -Token $clientToken -Body @{
-  title = "Build a senior-grade marketplace backend"
+  title = "Build a workflow marketplace system"
   description = "A complete marketplace workflow with identity, projects, proposals, contracts, milestones, disputes, auditability, dashboard metrics, and an outbox relay worker."
   budgetMin = 5000
   budgetMax = 9000
   currency = "USD"
-  skills = @("nestjs", "postgresql", "prisma", "architecture", "outbox", "security")
+  skills = @("nestjs", "postgresql", "prisma", "react", "workflow", "security")
 }
 
 $projectId = $project.data.id
@@ -108,7 +116,7 @@ Write-Host "Published project status:"
 Write-Host $publishedProject.data.status
 
 $proposal = Invoke-GigahubJson -Method "Post" -Path "/projects/$projectId/proposals" -Token $freelancerToken -Body @{
-  coverLetter = "I can build this marketplace backend with clear boundaries, reliable state transitions, audit trails, and async-ready integration events."
+  coverLetter = "I can build this marketplace workflow with clear boundaries, reliable state transitions, audit trails, and async-ready integration events."
   proposedAmount = 6000
   currency = "USD"
   deliveryDays = 28

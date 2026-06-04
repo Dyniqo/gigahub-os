@@ -1,0 +1,348 @@
+import type {
+  AuditLog,
+  Contract,
+  Dashboard,
+  Paginated,
+  Profile,
+  Project,
+  Proposal,
+  User,
+} from '../types/api';
+
+const now = new Date();
+const iso = (daysAgo = 0) => new Date(now.getTime() - daysAgo * 86400000).toISOString();
+
+export const seedUsers: Record<'CLIENT' | 'FREELANCER', User> = {
+  CLIENT: {
+    id: '73c928f2-8f7a-49d7-9b76-000000000001',
+    email: 'client@gigahub.local',
+    role: 'CLIENT',
+    status: 'ACTIVE',
+    emailVerifiedAt: iso(140),
+    createdAt: iso(160),
+    updatedAt: iso(1),
+  },
+  FREELANCER: {
+    id: 'd45ef0c8-7b63-4b0d-96ad-000000000002',
+    email: 'freelancer@gigahub.local',
+    role: 'FREELANCER',
+    status: 'ACTIVE',
+    emailVerifiedAt: iso(130),
+    createdAt: iso(145),
+    updatedAt: iso(2),
+  },
+};
+
+export const seedProfile: Profile = {
+  id: '96bf57f7-cbb1-427d-a860-000000000003',
+  userId: seedUsers.FREELANCER.id,
+  type: 'INDIVIDUAL',
+  displayName: 'Mina Realtime',
+  headline: 'Senior product engineer for high-trust marketplaces',
+  bio: 'I turn messy marketplace operations into resilient, auditable product systems. Recent work includes escrow flows, proposal ranking, milestone automation, and investor-grade dashboards.',
+  avatarUrl: null,
+  countryCode: 'DE',
+  timezone: 'Europe/Berlin',
+  hourlyRate: '95',
+  currency: 'USD',
+  skills: ['nestjs', 'postgresql', 'react', 'risk-systems', 'escrow'],
+  createdAt: iso(90),
+  updatedAt: iso(2),
+};
+
+export const seedProjects: Project[] = [
+  {
+    id: 'f5e12c89-5b2b-496d-94d7-000000000011',
+    clientId: seedUsers.CLIENT.id,
+    title: 'Build a programmable escrow workspace for distributed teams',
+    description:
+      'We need a senior full-stack engineer to design a milestone-based contract workspace with proposal intake, review queues, audit logs, and release flows. The core product must feel fast, calm, and trustworthy for both clients and freelancers.',
+    status: 'PUBLISHED',
+    budgetMin: '12000',
+    budgetMax: '18000',
+    currency: 'USD',
+    publishedAt: iso(2),
+    closedAt: null,
+    skills: ['nestjs', 'postgresql', 'react', 'fintech', 'product-design'],
+    createdAt: iso(6),
+    updatedAt: iso(1),
+    version: 4,
+  },
+  {
+    id: 'f5e12c89-5b2b-496d-94d7-000000000012',
+    clientId: seedUsers.CLIENT.id,
+    title: 'Marketplace observability layer with audit-grade timeline',
+    description:
+      'Create a dashboard that shows project, proposal, contract, milestone, and audit activity as a unified operational graph. Must include role-based actions and a strong empty-state experience.',
+    status: 'PUBLISHED',
+    budgetMin: '7000',
+    budgetMax: '11000',
+    currency: 'USD',
+    publishedAt: iso(5),
+    closedAt: null,
+    skills: ['dashboard', 'typescript', 'ux', 'analytics'],
+    createdAt: iso(10),
+    updatedAt: iso(4),
+    version: 2,
+  },
+  {
+    id: 'f5e12c89-5b2b-496d-94d7-000000000013',
+    clientId: seedUsers.CLIENT.id,
+    title: 'Proposal review system for expert network platform',
+    description:
+      'A concise product sprint to implement freelancer proposal submission, client review, shortlist, acceptance, and contract creation UX.',
+    status: 'DRAFT',
+    budgetMin: '5000',
+    budgetMax: '9000',
+    currency: 'USD',
+    publishedAt: null,
+    closedAt: null,
+    skills: ['react', 'workflow', 'saas'],
+    createdAt: iso(1),
+    updatedAt: iso(1),
+    version: 1,
+  },
+];
+
+export const seedProposals: Proposal[] = [
+  {
+    id: '08a69888-9310-4d9b-9088-000000000021',
+    projectId: seedProjects[0].id,
+    freelancerId: seedUsers.FREELANCER.id,
+    coverLetter:
+      'I would build this as a workflow-first product: model the contract state machine, design the release/dispute interactions, then ship a front-end that makes status and next steps unmistakable.',
+    proposedAmount: '15000',
+    currency: 'USD',
+    deliveryDays: 35,
+    status: 'SHORTLISTED',
+    submittedAt: iso(1),
+    decidedAt: null,
+    project: {
+      id: seedProjects[0].id,
+      clientId: seedProjects[0].clientId,
+      title: seedProjects[0].title,
+      status: seedProjects[0].status,
+    },
+    createdAt: iso(1),
+    updatedAt: iso(1),
+    version: 2,
+  },
+  {
+    id: '08a69888-9310-4d9b-9088-000000000022',
+    projectId: seedProjects[1].id,
+    freelancerId: seedUsers.FREELANCER.id,
+    coverLetter:
+      'The timeline should not be a table; it should read like a system flight recorder. I can design and ship the audit UX with optimistic states and defensive error handling.',
+    proposedAmount: '8800',
+    currency: 'USD',
+    deliveryDays: 21,
+    status: 'SUBMITTED',
+    submittedAt: iso(3),
+    decidedAt: null,
+    project: {
+      id: seedProjects[1].id,
+      clientId: seedProjects[1].clientId,
+      title: seedProjects[1].title,
+      status: seedProjects[1].status,
+    },
+    createdAt: iso(3),
+    updatedAt: iso(2),
+    version: 1,
+  },
+];
+
+export const seedContracts: Contract[] = [
+  {
+    id: '3da56584-7f18-4a8c-97c6-000000000031',
+    projectId: seedProjects[0].id,
+    proposalId: seedProposals[0].id,
+    clientId: seedUsers.CLIENT.id,
+    freelancerId: seedUsers.FREELANCER.id,
+    status: 'ACTIVE',
+    totalAmount: '15000',
+    currency: 'USD',
+    startedAt: iso(1),
+    endedAt: null,
+    terms: { reviewWindowDays: 3, asyncUpdates: true },
+    project: {
+      id: seedProjects[0].id,
+      title: seedProjects[0].title,
+      status: 'CONTRACTED',
+    },
+    milestones: [
+      {
+        id: '60ef0617-3b4d-4cfd-8e27-000000000041',
+        title: 'Workflow map and UX spine',
+        description:
+          'Define project → proposal → contract → milestone transitions and the high-trust interface primitives.',
+        amount: '3500',
+        currency: 'USD',
+        dueAt: iso(-5),
+        submittedAt: iso(0),
+        approvedAt: null,
+        releasedAt: null,
+        status: 'SUBMITTED',
+        createdAt: iso(1),
+        updatedAt: iso(0),
+        version: 3,
+      },
+      {
+        id: '60ef0617-3b4d-4cfd-8e27-000000000042',
+        title: 'Contract cockpit implementation',
+        description:
+          'Build the authenticated workspace, milestone actions, and financial state visuals.',
+        amount: '6500',
+        currency: 'USD',
+        dueAt: iso(-14),
+        submittedAt: null,
+        approvedAt: null,
+        releasedAt: null,
+        status: 'FUNDED',
+        createdAt: iso(1),
+        updatedAt: iso(1),
+        version: 1,
+      },
+      {
+        id: '60ef0617-3b4d-4cfd-8e27-000000000043',
+        title: 'Audit & release polish',
+        description: 'Make the audit log, release, approve, and dispute states feel launch-ready.',
+        amount: '5000',
+        currency: 'USD',
+        dueAt: iso(-28),
+        submittedAt: null,
+        approvedAt: null,
+        releasedAt: null,
+        status: 'FUNDED',
+        createdAt: iso(1),
+        updatedAt: iso(1),
+        version: 1,
+      },
+    ],
+    createdAt: iso(1),
+    updatedAt: iso(0),
+    version: 2,
+  },
+];
+
+export const seedAuditLogs: AuditLog[] = [
+  {
+    id: '91d4576d-b56e-4b1a-8b48-000000000051',
+    actorId: seedUsers.CLIENT.id,
+    action: 'CONTRACT_CREATED',
+    resourceType: 'CONTRACT',
+    resourceId: seedContracts[0].id,
+    ipAddress: '127.0.0.1',
+    userAgent: 'GigaHub Forge',
+    metadata: null,
+    createdAt: iso(0),
+  },
+  {
+    id: '91d4576d-b56e-4b1a-8b48-000000000052',
+    actorId: seedUsers.FREELANCER.id,
+    action: 'MILESTONE_SUBMITTED',
+    resourceType: 'MILESTONE',
+    resourceId: seedContracts[0].milestones[0].id,
+    ipAddress: '127.0.0.1',
+    userAgent: 'GigaHub Forge',
+    metadata: null,
+    createdAt: iso(0),
+  },
+  {
+    id: '91d4576d-b56e-4b1a-8b48-000000000053',
+    actorId: seedUsers.CLIENT.id,
+    action: 'PROPOSAL_ACCEPTED',
+    resourceType: 'PROPOSAL',
+    resourceId: seedProposals[0].id,
+    ipAddress: '127.0.0.1',
+    userAgent: 'GigaHub Forge',
+    metadata: null,
+    createdAt: iso(1),
+  },
+  {
+    id: '91d4576d-b56e-4b1a-8b48-000000000054',
+    actorId: seedUsers.CLIENT.id,
+    action: 'PROJECT_PUBLISHED',
+    resourceType: 'PROJECT',
+    resourceId: seedProjects[0].id,
+    ipAddress: '127.0.0.1',
+    userAgent: 'GigaHub Forge',
+    metadata: null,
+    createdAt: iso(2),
+  },
+  {
+    id: '91d4576d-b56e-4b1a-8b48-000000000055',
+    actorId: seedUsers.FREELANCER.id,
+    action: 'PROPOSAL_SUBMITTED',
+    resourceType: 'PROPOSAL',
+    resourceId: seedProposals[1].id,
+    ipAddress: '127.0.0.1',
+    userAgent: 'GigaHub Forge',
+    metadata: null,
+    createdAt: iso(3),
+  },
+];
+
+export const seedDashboard: Dashboard = {
+  generatedAt: iso(0),
+  projectStatuses: [
+    { status: 'DRAFT', count: 1 },
+    { status: 'PUBLISHED', count: 2 },
+    { status: 'PAUSED', count: 0 },
+    { status: 'CONTRACTED', count: 1 },
+  ],
+  proposalStatuses: [
+    { status: 'SUBMITTED', count: 1 },
+    { status: 'SHORTLISTED', count: 1 },
+    { status: 'ACCEPTED', count: 1 },
+    { status: 'REJECTED', count: 0 },
+    { status: 'WITHDRAWN', count: 0 },
+  ],
+  contractStatuses: [
+    { status: 'ACTIVE', count: 1 },
+    { status: 'COMPLETED', count: 0 },
+    { status: 'CANCELLED', count: 0 },
+  ],
+  milestoneStatuses: [
+    { status: 'FUNDED', count: 2 },
+    { status: 'SUBMITTED', count: 1 },
+    { status: 'APPROVED', count: 0 },
+    { status: 'RELEASED', count: 0 },
+    { status: 'DISPUTED', count: 0 },
+  ],
+  workQueue: {
+    clientMilestonesWaitingForReview: 1,
+    freelancerMilestonesReadyToSubmit: 2,
+    proposalsWaitingForClientDecision: 2,
+    activeContractsAsClient: 1,
+    activeContractsAsFreelancer: 1,
+  },
+  financials: {
+    earned: [{ currency: 'USD', amount: '0' }],
+    spent: [{ currency: 'USD', amount: '0' }],
+    pendingEarnings: [{ currency: 'USD', amount: '15000' }],
+    committedSpend: [{ currency: 'USD', amount: '15000' }],
+  },
+  recentActivity: seedAuditLogs.map(({ id, action, resourceType, resourceId, createdAt }) => ({
+    id,
+    action,
+    resourceType,
+    resourceId,
+    createdAt,
+  })),
+};
+
+export function paginate<T>(items: T[], page = 1, limit = 20): Paginated<T> {
+  const start = (page - 1) * limit;
+  const slice = items.slice(start, start + limit);
+  return {
+    items: slice,
+    meta: {
+      page,
+      limit,
+      total: items.length,
+      totalPages: Math.max(1, Math.ceil(items.length / limit)),
+      hasNextPage: start + limit < items.length,
+      hasPreviousPage: page > 1,
+    },
+  };
+}
