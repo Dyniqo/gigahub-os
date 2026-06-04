@@ -32,3 +32,12 @@ tmp
 temp
 
 backups
+
+# Package manager lockfiles from non-pnpm tools
+package-lock.json
+**/package-lock.json
+yarn.lock
+
+# Generated Vite config outputs from TypeScript project references
+apps/web/vite.config.js
+apps/web/vite.config.d.ts

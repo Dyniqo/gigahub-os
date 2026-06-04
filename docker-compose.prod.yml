@@ -1,21 +1,11 @@
-x-database-url: &database-url postgresql://gigahub:gigahub@postgres:5432/gigahub_os?schema=public
-
-x-build-args: &build-args
-  NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmjs.org/}
-  PRISMA_ENGINES_MIRROR: ${PRISMA_ENGINES_MIRROR:-https://binaries.prisma.sh}
-  HTTP_PROXY: ${HTTP_PROXY:-}
-  HTTPS_PROXY: ${HTTPS_PROXY:-}
-  NO_PROXY: ${NO_PROXY:-localhost,127.0.0.1,host.docker.internal}
-  http_proxy: ${HTTP_PROXY:-}
-  https_proxy: ${HTTPS_PROXY:-}
-  no_proxy: ${NO_PROXY:-localhost,127.0.0.1,host.docker.internal}
+x-database-url: &database-url postgresql://gigahub:${POSTGRES_PASSWORD}@postgres:5432/gigahub_os?schema=public
 
 x-app-environment: &app-environment
   NODE_ENV: production
   APP_NAME: ${APP_NAME:-GigaHub OS}
   DATABASE_URL: *database-url
-  JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-local-access-secret-change-me}
-  JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-local-refresh-secret-change-me}
+  JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+  JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
 
 services:
   postgres:
@@ -23,10 +13,8 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: gigahub
-      POSTGRES_PASSWORD: gigahub
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: gigahub_os
-    ports:
-      - '${POSTGRES_PORT:-55432}:5432'
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -37,12 +25,7 @@ services:
       start_period: 10s
 
   migrate:
-    build:
-      context: .
-      target: migrator
-      args:
-        <<: *build-args
-        DATABASE_URL: *database-url
+    image: ghcr.io/dyniqo/gigahub-migrate:${IMAGE_TAG:-latest}
     restart: 'no'
     environment:
       <<: *app-environment
@@ -51,12 +34,7 @@ services:
         condition: service_healthy
 
   api:
-    build:
-      context: .
-      target: runner
-      args:
-        <<: *build-args
-        DATABASE_URL: *database-url
+    image: ghcr.io/dyniqo/gigahub-api:${IMAGE_TAG:-latest}
     restart: unless-stopped
     environment:
       <<: *app-environment
@@ -64,13 +42,13 @@ services:
       APP_HOST: 0.0.0.0
       API_PREFIX: ${API_PREFIX:-api}
       API_VERSION: ${API_VERSION:-1}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080,http://localhost:5173,http://localhost:3000}
-      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-false}
       SWAGGER_PATH: ${SWAGGER_PATH:-docs}
       THROTTLE_TTL: ${THROTTLE_TTL:-60000}
       THROTTLE_LIMIT: ${THROTTLE_LIMIT:-100}
     ports:
-      - '${API_PORT:-3000}:3000'
+      - '127.0.0.1:${API_PORT:-13000}:3000'
     depends_on:
       postgres:
         condition: service_healthy
@@ -87,12 +65,7 @@ services:
       start_period: 20s
 
   worker:
-    build:
-      context: .
-      target: worker
-      args:
-        <<: *build-args
-        DATABASE_URL: *database-url
+    image: ghcr.io/dyniqo/gigahub-worker:${IMAGE_TAG:-latest}
     restart: unless-stopped
     environment:
       <<: *app-environment
@@ -103,15 +76,10 @@ services:
         condition: service_completed_successfully
 
   web:
-    build:
-      context: .
-      target: web
-      args:
-        <<: *build-args
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3000/api/v1}
+    image: ghcr.io/dyniqo/gigahub-web:${IMAGE_TAG:-latest}
     restart: unless-stopped
     ports:
-      - '${WEB_PORT:-8080}:80'
+      - '127.0.0.1:${WEB_PORT:-18080}:80'
     depends_on:
       api:
         condition: service_healthy

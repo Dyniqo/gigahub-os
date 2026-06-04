@@ -1,5 +1,14 @@
 import { Transform, Type } from 'class-transformer';
-import { ArrayMaxSize, IsArray, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 function toSkillArray({ value }: { value: unknown }): string[] | undefined {
@@ -49,7 +58,8 @@ export class ProjectListQueryDto {
     type: [String],
     isArray: true,
     example: ['nestjs', 'react'],
-    description: 'Repeat skill query params, for example ?skill=nestjs&skill=react. Comma-separated values are also accepted.',
+    description:
+      'Repeat skill query params, for example ?skill=nestjs&skill=react. Comma-separated values are also accepted.',
   })
   @IsOptional()
   @Transform(toSkillArray)

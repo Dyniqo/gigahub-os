@@ -19,7 +19,6 @@ import { CreateProjectDto } from '../interfaces/http/dto/create-project.dto';
 import { OwnedProjectListQueryDto } from '../interfaces/http/dto/owned-project-list-query.dto';
 import { ProjectListQueryDto } from '../interfaces/http/dto/project-list-query.dto';
 import { ProjectResponse } from '../interfaces/http/presenters/project.presenter';
-import { Logger } from '@nestjs/common';
 
 type ProjectRequestContext = {
   ipAddress?: string;

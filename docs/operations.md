@@ -1,248 +1,163 @@
 # Operations Guide
 
-This guide covers the local commands used to run, verify, and reset GigaHub OS.
+Use these commands from the repository root.
 
-## Start Infrastructure
+## Full Docker Stack
 
-```powershell
-docker compose up -d postgres
+Docker mode requires Docker only. Local Node.js, pnpm, and `node_modules` are not required because dependencies are installed inside the image.
+
+Fresh clone:
+
+```bash
+git clone <repo-url>
+cd gigahub-os
+cp .env.example .env
+cp apps/web/.env.example apps/web/.env
+docker compose up --build
 ```
 
-Redis is available through the queue profile when queue-backed workflows are needed.
+This starts PostgreSQL, runs committed Prisma migrations, then starts API, worker, and web.
 
-```powershell
-docker compose --profile queue up -d redis
+Detached mode:
+
+```bash
+docker compose up -d --build
+docker compose logs -f migrate api worker web
 ```
 
-## Stop Infrastructure
+URLs:
 
-```powershell
-docker compose stop
+```txt
+Web:     http://localhost:8080
+API:     http://localhost:3000/api/v1
+Swagger: http://localhost:3000/docs
 ```
 
-## Remove Local Infrastructure Data
+Stop containers while keeping the PostgreSQL volume:
 
-```powershell
+```bash
+docker compose down
+```
+
+Delete the local Docker PostgreSQL volume only when you intentionally want a clean database:
+
+```bash
 docker compose down -v
 ```
 
-## Install Dependencies
+## Migration Behavior
 
-```powershell
-pnpm install
-```
+Docker startup runs migrations through the one-shot `migrate` service:
 
-## Generate Prisma Client
-
-```powershell
-pnpm prisma:generate
-```
-
-## Create or Apply a Local Migration
-
-```powershell
-pnpm prisma:migrate:dev
-```
-
-## Apply Existing Migrations
-
-```powershell
+```bash
 pnpm prisma:migrate:deploy
 ```
 
-## Format
+This is production-style migration behavior:
 
-```powershell
-pnpm format
+- applies committed migrations only
+- does not create new migrations
+- does not reset the database
+- does not drop local data
+- fails startup before API/worker if the database is incompatible with the migration history
+
+For local development schema changes, use:
+
+```bash
+pnpm prisma:migrate:dev
 ```
 
-## Check Formatting
+## Local Development
 
-```powershell
-pnpm format:check
+Create env files:
+
+```bash
+cp .env.example .env
+cp apps/web/.env.example apps/web/.env
 ```
 
-## Lint
+Start PostgreSQL only:
 
-```powershell
-pnpm lint
+```bash
+docker compose up -d postgres
 ```
 
-## Type Check Web
+Install dependencies and prepare Prisma:
 
-```powershell
-pnpm typecheck:web
+```bash
+corepack enable
+corepack prepare pnpm@10.0.0 --activate
+pnpm install --frozen-lockfile
+pnpm prisma:generate
+pnpm prisma:migrate:dev
 ```
 
-## Build All Applications
+Run apps in separate terminals:
 
-```powershell
-pnpm build
-```
-
-## Build API
-
-```powershell
-pnpm build:api
-```
-
-## Build Worker
-
-```powershell
-pnpm build:worker
-```
-
-## Build Web
-
-```powershell
-pnpm build:web
-```
-
-## Run API
-
-```powershell
-pnpm start:api
-```
-
-For watch mode:
-
-```powershell
+```bash
 pnpm start:api:dev
-```
-
-## Run Worker
-
-```powershell
-pnpm start:worker
-```
-
-For watch mode:
-
-```powershell
 pnpm start:worker:dev
-```
-
-## Run Web Interface
-
-```powershell
 pnpm dev:web
 ```
 
-The web interface reads the API base URL from:
+## Verify Before Commit
 
-```env
-VITE_API_BASE_URL=http://localhost:3000/api/v1
+```bash
+pnpm verify
 ```
 
-## Preview Web Build
+Equivalent individual commands:
 
-```powershell
-pnpm preview:web
-```
-
-## Run API, Worker, and Web Together
-
-Open three terminals.
-
-Terminal 1:
-
-```powershell
-pnpm start:api
-```
-
-Terminal 2:
-
-```powershell
-pnpm start:worker
-```
-
-Terminal 3:
-
-```powershell
-pnpm dev:web
-```
-
-## Swagger
-
-```powershell
-Start-Process http://localhost:3000/docs
-```
-
-Use the full bearer value in Swagger authorization:
-
-```txt
-Bearer ACCESS_TOKEN
+```bash
+pnpm format:check
+pnpm lint
+pnpm typecheck:web
+pnpm build
 ```
 
 ## Health Checks
 
-Live check:
+```bash
+curl http://localhost:3000/api/v1/health/live
+curl http://localhost:3000/api/v1/health/ready
+```
+
+PowerShell:
 
 ```powershell
 Invoke-RestMethod http://localhost:3000/api/v1/health/live
-```
-
-Ready check:
-
-```powershell
 Invoke-RestMethod http://localhost:3000/api/v1/health/ready
 ```
 
 ## Demo Flow
 
-Run the full demo script after the API is running:
-
 ```powershell
 powershell -ExecutionPolicy Bypass -File docs/demo-flow.ps1
 ```
 
-Run the worker in a second terminal to see outbox relay logs while the demo creates workflow events.
-
-The script uses `http://localhost:3000/api/v1` by default. To point it at another API base URL:
+Override API base URL:
 
 ```powershell
 $env:GIGAHUB_API_BASE_URL = "http://localhost:3000/api/v1"
 powershell -ExecutionPolicy Bypass -File docs/demo-flow.ps1
 ```
 
-## Generated Client
+## Port Configuration
 
-The Prisma client is generated under the common database library path. Do not commit generated output.
+Default host ports:
 
-Before committing after a generate command:
-
-```powershell
-git reset libs/common/src/infrastructure/database/generated
+```txt
+Web:      8080
+API:      3000
+Postgres: 55432
 ```
 
-## Suggested Local Verification Sequence
+Override ports without editing committed files:
 
-Terminal 1:
-
-```powershell
-docker compose up -d postgres
-pnpm prisma:generate
-pnpm format:check
-pnpm lint
-pnpm typecheck:web
-pnpm build
-pnpm start:api
+```bash
+POSTGRES_PORT=55433 API_PORT=3001 WEB_PORT=8081 docker compose up -d --build
 ```
 
-Terminal 2:
+## Worker
 
-```powershell
-pnpm start:worker
-```
-
-Terminal 3:
-
-```powershell
-pnpm dev:web
-```
-
-Terminal 4:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File docs/demo-flow.ps1
-```
+The worker relays integration events through PostgreSQL-backed outbox polling. Redis is not required for the current runtime.

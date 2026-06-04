@@ -1,493 +1,237 @@
-# Gigahub OS
+# GigaHub OS
 
-Gigahub OS is a workflow-driven marketplace backend built with NestJS, PostgreSQL, Prisma, and a separate worker process. It models the core backend of a freelance marketplace with identity, projects, proposals, contracts, milestones, disputes, audit logs, dashboard metrics, and a transactional outbox relay.
+GigaHub OS is a workflow-driven freelance marketplace built with NestJS, React, PostgreSQL, Prisma, and a separate worker process. It covers project discovery, proposal submission, contract creation, milestone delivery, disputes, audit logs, dashboard metrics, and PostgreSQL-backed asynchronous outbox relay.
 
-The goal of this repository is to show a backend that is more than a CRUD API. It demonstrates clear module boundaries, explicit state transitions, transaction-safe event persistence, actor-scoped access control, and operational visibility.
+## Stack
 
-## Project Highlights
-
-* NestJS monorepo with separate API and worker applications
-* Modular application structure with strong feature boundaries
-* PostgreSQL-backed transactional outbox
-* Worker process for asynchronous integration event relay
-* JWT authentication and role-based authorization
-* Client and freelancer marketplace workflows
-* Project publishing and proposal submission
-* Proposal acceptance with contract and milestone creation
-* Milestone submit, approve, release, and dispute transitions
-* Actor-scoped audit logs
-* Actor dashboard metrics
-* Optimistic concurrency for critical state changes
-* Swagger documentation
-* Structured request logging
-* Health checks
-* Prisma migrations and generated client isolation
-* Docker Compose local infrastructure
-
-## Tech Stack
-
-* Node.js
-* pnpm
-* NestJS
-* TypeScript
-* PostgreSQL
-* Prisma
-* Docker Compose
-* Swagger
-
-## Repository Structure
-
-```txt
-apps
-  api
-    src
-      bootstrap
-      modules
-  worker
-    src
-      modules
-libs
-  common
-    src
-      domain
-      infrastructure
-      interfaces
-      shared
-  contracts
-    src
-docs
-  api-workflow.md
-  architecture.md
-  demo-flow.ps1
-  operations.md
-prisma
-  schema.prisma
-```
+- Node.js 24, pnpm 10, TypeScript
+- NestJS API and worker applications
+- React, Vite, Tailwind CSS web application
+- PostgreSQL and Prisma migrations
+- Docker Compose for the full local stack
+- Swagger API documentation and health checks
 
 ## Applications
 
-### API
-
-The API exposes versioned HTTP routes for marketplace workflows.
-
-Main responsibilities:
-
-* authentication
-* authorization
-* profile management
-* project publishing
-* proposal management
-* contract creation
-* milestone delivery
-* dispute handling
-* audit log browsing
-* dashboard metrics
-* health checks
-* Swagger documentation
-
-### Worker
-
-The worker runs as a separate NestJS application context.
-
-Main responsibilities:
-
-* polling pending outbox events
-* publishing integration events through an isolated publisher boundary
-* marking relayed events with idempotent updates
-* keeping async workloads outside API request latency
-
-## Architecture Overview
-
-```mermaid
-flowchart LR
-  Client[Client Apps] --> API[NestJS API]
-  API --> DB[(PostgreSQL)]
-  API --> Outbox[(Outbox Table)]
-  Worker[NestJS Worker] --> Outbox
-  Worker --> Publisher[Integration Event Publisher]
-  API --> Swagger[Swagger Docs]
+```txt
+apps/api       NestJS HTTP API
+apps/worker    NestJS worker for outbox relay
+apps/web       React/Vite web workspace
+libs/common    Shared backend domain and infrastructure
+libs/contracts Shared contracts and DTOs
+prisma         Prisma schema and migrations
+docs           Operational and workflow notes
 ```
 
-## Main Workflow
+## Requirements
 
-```mermaid
-sequenceDiagram
-  actor Client
-  actor Freelancer
-  participant API
-  participant DB as PostgreSQL
-  participant Worker
+For the one-command Docker setup, only these are required:
 
-  Client->>API: Create project
-  API->>DB: Persist draft project
+- Git
+- Docker and Docker Compose
 
-  Client->>API: Publish project
-  API->>DB: Update project status
+Local Node.js, pnpm, and `node_modules` are not required for Docker. Dependencies are installed inside the Docker image.
 
-  Freelancer->>API: Submit proposal
-  API->>DB: Persist proposal
+For host-based development without Dockerized app containers, use:
 
-  Client->>API: Accept proposal
-  API->>DB: Create contract and milestones
-  API->>DB: Write audit logs and outbox event
+- Node.js `24.x`
+- pnpm `10.x`
 
-  Freelancer->>API: Submit milestone
-  API->>DB: Update milestone and write outbox event
+Enable the pinned pnpm version once per machine when using local development commands:
 
-  Client->>API: Approve, release, or dispute milestone
-  API->>DB: Persist state transition and audit metadata
-
-  Worker->>DB: Poll outbox events
-  Worker->>Worker: Publish integration event
+```bash
+corepack enable
+corepack prepare pnpm@10.0.0 --activate
 ```
 
-## Core Concepts
+## Start Everything with Docker
 
-### Modular Monorepo
+Fresh clone:
 
-The repository is structured as a NestJS monorepo with isolated applications and shared libraries. The API and worker are separate runtime boundaries, while common infrastructure and shared primitives live under `libs`.
-
-### Workflow-Driven Design
-
-The project focuses on real marketplace workflows instead of simple resource CRUD. Important user actions are represented as explicit state transitions with validation, authorization, audit logging, and integration event persistence.
-
-### Transactional Outbox
-
-Important state transitions write integration events into the outbox table inside the same database transaction as the business change.
-
-The worker relays those events outside the API request lifecycle.
-
-Current integration event names:
-
-* `ContractCreated`
-* `MilestoneSubmitted`
-* `MilestoneApproved`
-* `MilestoneReleased`
-* `MilestoneDisputed`
-
-### Actor-Scoped Access
-
-Every protected workflow is scoped to the authenticated actor. Clients and freelancers only access resources they own or participate in.
-
-### Optimistic Concurrency
-
-Critical state changes use version-aware updates to protect workflows from conflicting concurrent requests.
-
-Examples:
-
-* publishing projects
-* accepting proposals
-* milestone submit, approve, release, and dispute transitions
-
-## Marketplace Workflow
-
-The main flow is:
-
-1. A client registers or logs in.
-2. A freelancer registers or logs in.
-3. The client creates a draft project.
-4. The client publishes the project.
-5. The freelancer submits a proposal.
-6. The client accepts the proposal.
-7. The system creates a contract and milestones.
-8. The freelancer submits a funded milestone.
-9. The client approves and releases the milestone.
-10. Either actor can dispute a funded, submitted, or approved milestone.
-11. Important workflow transitions create audit logs and outbox events.
-12. The worker relays pending outbox events.
-
-## Core API Areas
-
-### Identity
-
-* register client or freelancer
-* login
-* receive access and refresh tokens
-
-### Profiles
-
-* upsert authenticated user profile
-* keep user profile separate from identity credentials
-
-### Projects
-
-* create projects as a client
-* publish projects
-* browse available projects
-
-### Proposals
-
-* submit proposals as a freelancer
-* withdraw submitted proposals
-* accept proposals as the owning client
-
-### Contracts
-
-* create contracts by accepting proposals
-* create milestones during proposal acceptance
-* browse actor-scoped contracts
-
-### Milestones
-
-* submit funded milestones as a freelancer
-* approve submitted milestones as a client
-* release approved milestones as a client
-* dispute funded, submitted, or approved milestones as either actor
-
-### Audit Logs
-
-* browse authenticated actor audit logs
-* filter by action, resource type, and resource ID
-
-### Dashboard
-
-* view actor-scoped status counts
-* view work queue metrics
-* view financial metrics
-* view recent activity
-
-## Local Requirements
-
-* Node.js 24+
-* pnpm 10+
-* Docker Desktop
-
-## Environment
-
-Create a local `.env` file from `.env.example`.
-
-```powershell
-Copy-Item .env.example .env
+```bash
+git clone https://github.com/dyniqo/gigahub-os.git
+cd gigahub-os
+cp .env.example .env
+cp apps/web/.env.example apps/web/.env
+docker compose up --build
 ```
 
-Use strong JWT secrets for local development as well.
+If you skip the `.env` files, Docker Compose still uses safe local defaults from `docker-compose.yml`. Copying the examples is recommended when you want to customize ports, CORS, or local secrets.
 
-## Start Infrastructure
+Detached mode:
 
-```powershell
-docker compose up -d postgres
+```bash
+docker compose up -d --build
+docker compose logs -f migrate api worker web
 ```
 
-Redis is included in Docker Compose for future queue-backed workflows, but it is not required by the current application flow.
+Open:
 
-When a queue-backed flow is added later:
-
-```powershell
-docker compose --profile queue up -d redis
+```txt
+Web:     http://localhost:8080
+API:     http://localhost:3000/api/v1
+Swagger: http://localhost:3000/docs
 ```
 
-## Install Dependencies
+Health checks:
 
-```powershell
-pnpm install
+```bash
+curl http://localhost:3000/api/v1/health/live
+curl http://localhost:3000/api/v1/health/ready
 ```
 
-## Generate Prisma Client
+Stop the stack:
 
-```powershell
-pnpm prisma:generate
+```bash
+docker compose down
 ```
 
-## Apply Database Migrations
+Reset local Docker data only when you intentionally want to delete the local PostgreSQL volume:
 
-For local development:
-
-```powershell
-pnpm prisma:migrate:dev
+```bash
+docker compose down -v
 ```
 
-For applying existing migrations:
+## Database and Migration Safety
 
-```powershell
+The Docker stack uses its own PostgreSQL container and a named Docker volume. It does not connect to a PostgreSQL database already running on your machine.
+
+On startup, the `migrate` service runs:
+
+```bash
 pnpm prisma:migrate:deploy
 ```
 
-## Verify the Project
+This applies committed migrations only. It does not run `prisma migrate dev`, does not reset the database, and does not drop local data. If the target database is not compatible with the committed Prisma migration history, startup fails before the API and worker start.
 
-```powershell
-pnpm format
-pnpm lint
-pnpm build
+The PostgreSQL container is exposed on host port `55432` by default to avoid common conflicts with an existing local PostgreSQL server on `5432`.
+
+## Local Development without Dockerized App Containers
+
+Create local environment files:
+
+```bash
+cp .env.example .env
+cp apps/web/.env.example apps/web/.env
 ```
 
-## Run the API
+Start PostgreSQL only:
 
-```powershell
-pnpm start:api
+```bash
+docker compose up -d postgres
 ```
 
-## Run the Worker
+Install and prepare the project:
 
-Open another terminal:
-
-```powershell
-pnpm start:worker
+```bash
+pnpm install --frozen-lockfile
+pnpm prisma:generate
+pnpm prisma:migrate:dev
 ```
 
-## Swagger
+Run the apps in separate terminals:
 
-```powershell
-Start-Process http://localhost:3000/docs
+```bash
+pnpm start:api:dev
+pnpm start:worker:dev
+pnpm dev:web
 ```
 
-Use the complete bearer value in Swagger authorization:
+Local development URLs:
 
 ```txt
-Bearer ACCESS_TOKEN
+Web:     http://localhost:5173
+API:     http://localhost:3000/api/v1
+Swagger: http://localhost:3000/docs
 ```
 
-## Health Checks
+## Pull, Install, Verify, Build
 
-Live check:
+After pulling new changes:
 
-```powershell
-Invoke-RestMethod http://localhost:3000/api/v1/health/live
+```bash
+corepack enable
+corepack prepare pnpm@10.0.0 --activate
+pnpm install --frozen-lockfile
+pnpm prisma:generate
+pnpm verify
 ```
 
-Ready check:
+`pnpm verify` runs formatting checks, linting, web type-checking, and a full production build.
 
-```powershell
-Invoke-RestMethod http://localhost:3000/api/v1/health/ready
+Individual commands:
+
+```bash
+pnpm format:check
+pnpm lint
+pnpm typecheck:web
+pnpm build
 ```
 
 ## Demo Flow
 
-Run the API first:
-
-```powershell
-pnpm start:api
-```
-
-Run the worker in another terminal if you want to see outbox relay logs:
-
-```powershell
-pnpm start:worker
-```
-
-Then run:
+After the API is running:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File docs/demo-flow.ps1
 ```
 
-The demo script prints:
-
-* client bearer token
-* freelancer bearer token
-* health check output
-* created project ID
-* created proposal ID
-* created contract ID
-* release milestone ID
-* dispute milestone ID
-* milestone states
-* audit log output
-* dashboard output
-* Swagger authorization values
-
-## Worker Relay Logs
-
-When the worker is running, expected relay log event types include:
-
-```txt
-outbox_relay_started
-outbox_relay_batch_loaded
-integration_event_published
-outbox_relay_event_processed
-```
-
-## Documentation
-
-Detailed docs are available in:
-
-* `docs/architecture.md`
-* `docs/api-workflow.md`
-* `docs/operations.md`
-
-## Generated Files
-
-The Prisma client is generated under the common database library path.
-
-Do not commit generated output.
-
-Before committing after a generate command:
+The script uses `http://localhost:3000/api/v1` by default. Override it with:
 
 ```powershell
-git reset libs/common/src/infrastructure/database/generated
+$env:GIGAHUB_API_BASE_URL = "http://localhost:3000/api/v1"
+powershell -ExecutionPolicy Bypass -File docs/demo-flow.ps1
 ```
 
 ## Useful Commands
 
-Start PostgreSQL:
-
-```powershell
-docker compose up -d postgres
+```bash
+pnpm docker:up           # docker compose up --build
+pnpm docker:up:detached  # docker compose up -d --build
+pnpm docker:logs         # follow migrate/api/worker/web logs
+pnpm docker:down         # stop containers, keep data
+pnpm docker:reset        # stop containers and delete local Docker DB volume
 ```
 
-Generate Prisma client:
+Make targets are also available:
 
-```powershell
-pnpm prisma:generate
+```bash
+make install
+make verify
+make infra
+make app
+make app-logs
+make app-down
 ```
 
-Run migrations locally:
+## Architecture Summary
 
-```powershell
-pnpm prisma:migrate:dev
+```mermaid
+flowchart LR
+  Web[React Web] --> API[NestJS API]
+  API --> DB[(PostgreSQL)]
+  API --> Outbox[(Transactional Outbox)]
+  Worker[NestJS Worker] --> Outbox
+  Worker --> Publisher[Integration Publisher Boundary]
 ```
 
-Format, lint, and build:
+Important workflow transitions write integration events to the outbox table inside the same database transaction as the business change. The worker relays pending events outside API request latency. Redis is not required because the current async workflow is PostgreSQL-backed outbox polling.
 
-```powershell
-pnpm format
-pnpm lint
-pnpm build
-```
 
-Run API:
+## Production Deployment
 
-```powershell
-pnpm start:api
-```
+For production, do not copy `node_modules` or build the app directly on the VPS. The recommended flow is to build Docker images in GitHub Actions, publish them to GitHub Container Registry, and let the VPS pull those images with `docker-compose.prod.yml`.
 
-Run worker:
+Production VPS instructions are documented in [docs/deployment-vps.md](docs/deployment-vps.md).
 
-```powershell
-pnpm start:worker
-```
+## More Docs
 
-Run demo:
+- [Operations](docs/operations.md) - operational commands and safety notes
+- [VPS Deployment](docs/deployment-vps.md) - production VPS deployment guide
+- [Architecture](docs/architecture.md) - architecture and module boundaries
+- [API Workflow](docs/api-workflow.md) - API workflow guide
 
-```powershell
-powershell -ExecutionPolicy Bypass -File docs/demo-flow.ps1
-```
-
-## Suggested Local Verification Sequence
-
-Terminal 1:
-
-```powershell
-docker compose up -d postgres
-pnpm prisma:generate
-pnpm format
-pnpm lint
-pnpm build
-pnpm start:api
-```
-
-Terminal 2:
-
-```powershell
-pnpm start:worker
-```
-
-Terminal 3:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File docs/demo-flow.ps1
-```
-
-## 📬 Contact Us
+## Contact Us
 
 We'd love to hear from you! If you have questions, suggestions, or need support, here are the ways to reach us:
 

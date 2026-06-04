@@ -251,7 +251,7 @@ Local runtime dependencies:
 - Node.js
 - pnpm
 
-Redis is represented in Docker Compose for queue-backed workflows. The current event relay uses PostgreSQL-backed outbox polling.
+The current event relay uses PostgreSQL-backed outbox polling. Redis is intentionally not part of the runtime until a queue-backed workflow is introduced.
 
 ## Evolution Path
 

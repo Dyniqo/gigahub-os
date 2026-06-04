@@ -22,10 +22,6 @@ export function configuration() {
     database: {
       url: env.DATABASE_URL,
     },
-    redis: {
-      host: env.REDIS_HOST,
-      port: env.REDIS_PORT,
-    },
     security: {
       corsOrigins: parseList(env.CORS_ORIGINS),
       throttleTtl: env.THROTTLE_TTL,

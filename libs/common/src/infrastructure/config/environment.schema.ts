@@ -21,8 +21,6 @@ export const environmentSchema = z.object({
   THROTTLE_TTL: z.coerce.number().int().positive().default(60000),
   THROTTLE_LIMIT: z.coerce.number().int().positive().default(100),
   DATABASE_URL: z.string().url(),
-  REDIS_HOST: z.string().min(1).default('localhost'),
-  REDIS_PORT: z.coerce.number().int().min(1).max(65535).default(6379),
   JWT_ACCESS_SECRET: z.string().min(24),
   JWT_REFRESH_SECRET: z.string().min(24),
 });
