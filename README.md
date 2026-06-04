@@ -217,7 +217,6 @@ flowchart LR
 
 Important workflow transitions write integration events to the outbox table inside the same database transaction as the business change. The worker relays pending events outside API request latency. Redis is not required because the current async workflow is PostgreSQL-backed outbox polling.
 
-
 ## Production Deployment
 
 For production, do not copy `node_modules` or build the app directly on the VPS. The recommended flow is to build Docker images in GitHub Actions, publish them to GitHub Container Registry, and let the VPS pull those images with `docker-compose.prod.yml`.
