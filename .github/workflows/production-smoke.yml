@@ -94,10 +94,11 @@ jobs:
             fi
 
             echo "Waiting for API readiness: attempt ${attempt}/36"
+
             docker compose \
               --env-file "$ENV_FILE" \
               -f "$COMPOSE_FILE" \
-              ps -a
+              ps --all
 
             sleep 5
           done
@@ -108,25 +109,38 @@ jobs:
       - name: Verify production stack
         shell: bash
         run: |
+          echo "Checking API live endpoint..."
           curl --fail --silent \
             http://127.0.0.1:13000/api/v1/health/live > /dev/null
 
+          echo "Checking API readiness endpoint..."
           curl --fail --silent \
             http://127.0.0.1:13000/api/v1/health/ready > /dev/null
 
+          echo "Checking web endpoint..."
           curl --fail --silent \
             http://127.0.0.1:18080 > /dev/null
 
+          echo "Checking migrate container..."
           MIGRATE_ID="$(
             docker compose \
               --env-file "$ENV_FILE" \
               -f "$COMPOSE_FILE" \
-              ps -q migrate
+              ps --all -q migrate
           )"
 
           test -n "$MIGRATE_ID"
-          test "$(docker inspect --format='{{.State.ExitCode}}' "$MIGRATE_ID")" = "0"
 
+          MIGRATE_EXIT_CODE="$(
+            docker inspect \
+              --format='{{.State.ExitCode}}' \
+              "$MIGRATE_ID"
+          )"
+
+          echo "Migrate exit code: $MIGRATE_EXIT_CODE"
+          test "$MIGRATE_EXIT_CODE" = "0"
+
+          echo "Checking worker and web containers..."
           for service in worker web; do
             CONTAINER_ID="$(
               docker compose \
@@ -136,9 +150,18 @@ jobs:
             )"
 
             test -n "$CONTAINER_ID"
-            test "$(docker inspect --format='{{.State.Running}}' "$CONTAINER_ID")" = "true"
+
+            RUNNING="$(
+              docker inspect \
+                --format='{{.State.Running}}' \
+                "$CONTAINER_ID"
+            )"
+
+            echo "$service running: $RUNNING"
+            test "$RUNNING" = "true"
           done
 
+          echo "Checking PostgreSQL and API health..."
           for service in postgres api; do
             CONTAINER_ID="$(
               docker compose \
@@ -148,26 +171,49 @@ jobs:
             )"
 
             test -n "$CONTAINER_ID"
-            test "$(docker inspect --format='{{.State.Health.Status}}' "$CONTAINER_ID")" = "healthy"
+
+            HEALTH_STATUS="$(
+              docker inspect \
+                --format='{{.State.Health.Status}}' \
+                "$CONTAINER_ID"
+            )"
+
+            echo "$service health: $HEALTH_STATUS"
+            test "$HEALTH_STATUS" = "healthy"
           done
+
+          echo "Production stack verification completed successfully."
 
           docker compose \
             --env-file "$ENV_FILE" \
             -f "$COMPOSE_FILE" \
-            ps -a
+            ps --all
 
       - name: Show logs on failure
         if: failure()
+        shell: bash
         run: |
-          docker compose \
-            --env-file "$ENV_FILE" \
-            -f "$COMPOSE_FILE" \
-            logs --no-color --tail=300
+          if [[ -f "$ENV_FILE" ]]; then
+            docker compose \
+              --env-file "$ENV_FILE" \
+              -f "$COMPOSE_FILE" \
+              ps --all || true
+
+            docker compose \
+              --env-file "$ENV_FILE" \
+              -f "$COMPOSE_FILE" \
+              logs --no-color --tail=300 || true
+          else
+            echo "Smoke-test environment file was not created."
+          fi
 
       - name: Stop smoke-test stack
         if: always()
+        shell: bash
         run: |
-          docker compose \
-            --env-file "$ENV_FILE" \
-            -f "$COMPOSE_FILE" \
-            down -v --remove-orphans
+          if [[ -f "$ENV_FILE" ]]; then
+            docker compose \
+              --env-file "$ENV_FILE" \
+              -f "$COMPOSE_FILE" \
+              down -v --remove-orphans || true
+          fi
