@@ -1,0 +1,173 @@
+name: Production image smoke test
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: GHCR image tag to test
+        required: true
+        default: latest
+        type: string
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  smoke-test:
+    name: Test published production images
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      COMPOSE_FILE: docker-compose.prod.yml
+      ENV_FILE: .env.production.smoke
+      COMPOSE_PROJECT_NAME: gigahub-smoke-${{ github.run_id }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create smoke-test environment
+        shell: bash
+        run: |
+          POSTGRES_PASSWORD="$(openssl rand -hex 24)"
+          JWT_ACCESS_SECRET="$(openssl rand -hex 48)"
+          JWT_REFRESH_SECRET="$(openssl rand -hex 48)"
+
+          cat > "$ENV_FILE" <<EOF
+          APP_NAME=GigaHub OS Smoke Test
+
+          POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+          JWT_ACCESS_SECRET=$JWT_ACCESS_SECRET
+          JWT_REFRESH_SECRET=$JWT_REFRESH_SECRET
+
+          IMAGE_TAG=${{ inputs.image_tag }}
+
+          API_PREFIX=api
+          API_VERSION=1
+          SWAGGER_ENABLED=false
+          SWAGGER_PATH=docs
+
+          CORS_ORIGINS=http://localhost:18080
+
+          WEB_PORT=18080
+          API_PORT=13000
+          EOF
+
+      - name: Validate production Compose
+        run: |
+          docker compose \
+            --env-file "$ENV_FILE" \
+            -f "$COMPOSE_FILE" \
+            config
+
+      - name: Pull published images
+        run: |
+          docker compose \
+            --env-file "$ENV_FILE" \
+            -f "$COMPOSE_FILE" \
+            pull
+
+      - name: Start production stack
+        run: |
+          docker compose \
+            --env-file "$ENV_FILE" \
+            -f "$COMPOSE_FILE" \
+            up -d
+
+      - name: Wait for API readiness
+        shell: bash
+        run: |
+          for attempt in $(seq 1 36); do
+            if curl --fail --silent \
+              http://127.0.0.1:13000/api/v1/health/ready > /dev/null; then
+              echo "API is ready."
+              exit 0
+            fi
+
+            echo "Waiting for API readiness: attempt ${attempt}/36"
+            docker compose \
+              --env-file "$ENV_FILE" \
+              -f "$COMPOSE_FILE" \
+              ps -a
+
+            sleep 5
+          done
+
+          echo "API did not become ready."
+          exit 1
+
+      - name: Verify production stack
+        shell: bash
+        run: |
+          curl --fail --silent \
+            http://127.0.0.1:13000/api/v1/health/live > /dev/null
+
+          curl --fail --silent \
+            http://127.0.0.1:13000/api/v1/health/ready > /dev/null
+
+          curl --fail --silent \
+            http://127.0.0.1:18080 > /dev/null
+
+          MIGRATE_ID="$(
+            docker compose \
+              --env-file "$ENV_FILE" \
+              -f "$COMPOSE_FILE" \
+              ps -q migrate
+          )"
+
+          test -n "$MIGRATE_ID"
+          test "$(docker inspect --format='{{.State.ExitCode}}' "$MIGRATE_ID")" = "0"
+
+          for service in worker web; do
+            CONTAINER_ID="$(
+              docker compose \
+                --env-file "$ENV_FILE" \
+                -f "$COMPOSE_FILE" \
+                ps -q "$service"
+            )"
+
+            test -n "$CONTAINER_ID"
+            test "$(docker inspect --format='{{.State.Running}}' "$CONTAINER_ID")" = "true"
+          done
+
+          for service in postgres api; do
+            CONTAINER_ID="$(
+              docker compose \
+                --env-file "$ENV_FILE" \
+                -f "$COMPOSE_FILE" \
+                ps -q "$service"
+            )"
+
+            test -n "$CONTAINER_ID"
+            test "$(docker inspect --format='{{.State.Health.Status}}' "$CONTAINER_ID")" = "healthy"
+          done
+
+          docker compose \
+            --env-file "$ENV_FILE" \
+            -f "$COMPOSE_FILE" \
+            ps -a
+
+      - name: Show logs on failure
+        if: failure()
+        run: |
+          docker compose \
+            --env-file "$ENV_FILE" \
+            -f "$COMPOSE_FILE" \
+            logs --no-color --tail=300
+
+      - name: Stop smoke-test stack
+        if: always()
+        run: |
+          docker compose \
+            --env-file "$ENV_FILE" \
+            -f "$COMPOSE_FILE" \
+            down -v --remove-orphans
