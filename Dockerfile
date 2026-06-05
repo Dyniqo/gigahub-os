@@ -40,6 +40,16 @@ RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
   pnpm config set store-dir /pnpm/store \
   && pnpm install --frozen-lockfile --fetch-retries=10
 
+FROM deps AS prod-deps
+
+ENV NODE_ENV=production
+ENV CI=true
+
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
+  rm -rf node_modules apps/*/node_modules libs/*/node_modules \
+  && pnpm config set store-dir /pnpm/store \
+  && pnpm install --prod --frozen-lockfile --offline
+
 FROM deps AS prisma
 
 ARG DATABASE_URL=postgresql://gigahub:gigahub@postgres:5432/gigahub_os?schema=public
@@ -76,8 +86,7 @@ COPY tsconfig.json tsconfig.build.json nest-cli.json webpack.config.js ./
 COPY apps ./apps
 COPY libs ./libs
 
-RUN pnpm build \
-  && pnpm prune --prod
+RUN pnpm build
 
 FROM nginx:1.27-alpine AS web
 
@@ -101,7 +110,7 @@ RUN --mount=type=cache,id=apt-runtime-cache,target=/var/cache/apt,sharing=locked
   && apt-get install -y --no-install-recommends ca-certificates openssl \
   && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /app/node_modules ./node_modules
+COPY --from=prod-deps /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/prisma ./prisma
